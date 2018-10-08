@@ -11,6 +11,7 @@ import io.reactivex.Single;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -64,6 +65,18 @@ public class StateHandler {
             entities.put(entity.getId(),entity);
 
             singleEmitter.onSuccess(entity);
+        });
+    }
+
+    public Observable<Entity> saveEntityState(Entity... entities){
+        return Observable.create(observableEmitter -> {
+            for (Entity e: entities){
+                if (observableEmitter.isDisposed())
+                    return;
+                this.entities.put(e.getId(),e);
+                observableEmitter.onNext(e);
+            }
+            observableEmitter.onComplete();
         });
     }
 
@@ -133,12 +146,15 @@ public class StateHandler {
 
     public Maybe<Entity> getEntityByName(String name) {
         return Maybe.create(maybeEmitter -> {
+
             Optional<Entity> optionalS = this.entities.entrySet()
                     .stream()
                     .map(Map.Entry::getValue)
-                    .filter(entity -> entity.getName().equalsIgnoreCase(name))
+                    .filter(entity -> {
+//                        System.out.println(entity);
+                        return entity.getName().equalsIgnoreCase(name);
+                    })
                     .findFirst();
-
 
             if (optionalS.isPresent()){
                 log.debug("Found entity by FULL match: " + optionalS.get().toString());
@@ -163,7 +179,4 @@ public class StateHandler {
         });
 
     }
-//    public Single<Entity> getEntityByName(String name) {
-//        return getEntityByName(name,null);
-//    }
 }

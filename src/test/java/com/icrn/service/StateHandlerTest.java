@@ -91,8 +91,8 @@ public class StateHandlerTest {
                 .blockingGet();
         this.stateHandler.saveEntityState(josephene)
                 .blockingGet();
-        this.stateHandler.getAllOnlineEntities()
-                .subscribe(System.out::println);
+//        this.stateHandler.getAllOnlineEntities()
+//                .subscribe(System.out::println);
 
         this.stateHandler.getEntityByName("joe")
                 .test()
@@ -109,5 +109,10 @@ public class StateHandlerTest {
                 .test()
                 .assertComplete()
                 .assertValue(entity -> entity.getId() == josephene.getId());
+
+        final Entity entity = this.stateHandler.getEntityByName("JOE")
+                .blockingGet();
+//        System.out.println(entity);
+
     }
 }

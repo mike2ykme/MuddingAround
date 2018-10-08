@@ -14,6 +14,28 @@ public class Room implements Entity {
     public Room(){
 
     }
+
+    public String getName(){
+        if (this.name == null)
+            return id.toString();
+        else
+            return this.name;
+    }
+
+    public void setName(String name){
+        this.name = name;
+    }
+
+    @Override
+    public void setHP(int HP) {
+
+    }
+
+    @Override
+    public int getHP() {
+        return -1;
+    }
+
     public Room(Long id){
         this.id = id;
     }

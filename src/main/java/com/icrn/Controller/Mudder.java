@@ -56,17 +56,37 @@ public class Mudder {
     }
 
     private Single<MudResult> handleAttack(MudUser user, MudCommand cmd){
-        return null;
-//        return Single.create(singleEmitter -> {
-//           user.performAction();
-//           stateHandler.getAllEntitiesByRoom(user.getRoomLocation())
-//                   .fi
-//
-//
-//           stateHandler.saveEntityState(user).subscribe(entity -> {
-//               singleEmitter.onSuccess(MudResult.noActionSuccess("You attacked " + cmd.getTarget().get()));
-//           },singleEmitter::onError);
-//        });
+//        return Single.just(MudResult.noActionSuccess("ABC"));
+        return Single.create(singleEmitter -> {
+           user.performAction();
+
+           cmd.getTarget().ifPresent(otherUserName->{
+               this.stateHandler.getEntityByName(otherUserName)
+                       .subscribe(entity -> {
+                           if (entity.getRoomLocation() == user.getRoomLocation()) {
+                               try {
+                                   int dmg = user.attack(entity);
+                                   this.stateHandler.saveEntityState(entity).blockingGet();
+
+                                   singleEmitter.onSuccess(MudResult
+                                           .noActionSuccess("You did "+ dmg + " damage"));
+
+                               } catch (Exception e) {
+                                   singleEmitter.onError(e);
+                               }
+                           } else {
+                               singleEmitter.onSuccess(MudResult
+                                       .noActionFailure("You're not in the same room as " + entity.getName()));
+
+                           }
+
+                       },singleEmitter::onError);
+
+//               singleEmitter.onSuccess(MudResult.noActionFailure("Unable to do attack: " + ));
+           });
+
+           this.stateHandler.saveEntityState(user);
+        });
     }
 
     private Single<MudResult> handleWait(MudUser user, MudCommand cmd){

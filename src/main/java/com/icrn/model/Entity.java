@@ -9,4 +9,6 @@ public interface Entity {
     void setRoomLocation(long l);
     String getName();
     void setName(String name);
+    void setHP(int HP);
+    int getHP();
 }

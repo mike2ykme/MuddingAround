@@ -2,11 +2,8 @@ package com.icrn.Controller;
 
 import static org.mockito.Mockito.*;
 
-import com.icrn.dao.EntityDao;
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
-import io.reactivex.Completable;
-import io.reactivex.Single;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -116,14 +113,38 @@ public class MudderTest {
 
     @Test
     public void handleAttackInSameRoom(){
-        MudUser user = this.stateHandler.getUserById(1L).blockingGet();
-        MudCommand command = MudCommand.of(Actions.ATTACK,"Moe",user);
+        MudUser joe = this.stateHandler.getUserById(1L).blockingGet();
+        MudUser moe = this.stateHandler.getUserById(2L).blockingGet();
+
+        this.stateHandler.getEntityByName("JOE")
+                .subscribe(System.out::println,Throwable::printStackTrace);
+
+
+        MudCommand command = MudCommand.of(Actions.ATTACK,"Moe",joe);
+        int moeHp = moe.getHP();
+        System.out.println(moeHp);
+        this.mudder.HandleAction(command)
+                .subscribe(System.out::println,Throwable::printStackTrace);
+
+        System.out.println(this.stateHandler.getUserById(2L).blockingGet().getHP());
+        Assert.assertTrue(moeHp > this.stateHandler.getUserById(2L).blockingGet().getHP());
+    }
+
+    @Test
+    public void handleAttackInDifferentRoom(){
+        MudUser joe = this.stateHandler.getUserById(1L).blockingGet();
+        MudUser moe = this.stateHandler.getUserById(2L).blockingGet();
+        moe.setRoomLocation(10L);
+        this.stateHandler.saveEntityState(moe).blockingGet();
+
+        MudCommand command = MudCommand.of(Actions.ATTACK,"Moe",joe);
 
         this.mudder.HandleAction(command)
                 .test()
                 .assertNoErrors()
                 .assertComplete()
-                .assertValue(MudResult::isCompleted);
-
+                .assertValue(mudResult -> {
+                    return mudResult.isCompleted() == false && mudResult.getMsg().toUpperCase().contains("NOT");
+                });
     }
 }
