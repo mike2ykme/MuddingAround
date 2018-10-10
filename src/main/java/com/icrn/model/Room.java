@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @Data
 public class Room implements Entity {
@@ -11,6 +12,7 @@ public class Room implements Entity {
     long roomLocation;
     private Long id;
     private String name;
+    private Long lastAttackedBy;
     public Room(){
 
     }
@@ -34,6 +36,16 @@ public class Room implements Entity {
     @Override
     public int getHP() {
         return -1;
+    }
+
+    @Override
+    public void setLastAttackedById(Long id) {
+
+    }
+
+    @Override
+    public Optional<Long> getLastAttackedById() {
+        return Optional.empty();
     }
 
     public Room(Long id){

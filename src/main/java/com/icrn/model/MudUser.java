@@ -7,6 +7,7 @@ import lombok.NonNull;
 import lombok.ToString;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Data
 @AllArgsConstructor
@@ -26,6 +27,15 @@ public class MudUser implements Entity {
     private EntityType type;
     private long roomLocation;
     private UserStatus userStatus;
+    private Long lastAttackedById;
+
+    public Optional<Long> getLastAttackedById(){
+        if (this.lastAttackedById == null)
+            return Optional.empty();
+
+        else
+            return Optional.of(this.lastAttackedById);
+    }
 
 
     public LocalDateTime performAction(){
@@ -54,7 +64,7 @@ public class MudUser implements Entity {
     public static MudUser makeJoe(){
         LocalDateTime time = LocalDateTime.of(2018,1,1,1,1);
         return new MudUser(1L,"JOE","JOE",time,25,12,
-                10,10,10,true,EntityType.USER,0L,UserStatus.ACTIVE);
+                10,10,10,true,EntityType.USER,0L,UserStatus.ACTIVE,null);
     }
 
     public void setHP(int hp){
@@ -69,14 +79,7 @@ public class MudUser implements Entity {
 //        TO.DO();
 //        TODO
         entity.setHP(entity.getHP()-this.getSTR());
+        entity.setLastAttackedById(this.getId());
         return this.getSTR();
     }
-
-//    public void setStatus(UserStatus status) {
-//        this.status = status;
-//    }
-//
-//    public UserStatus getStatus() {
-//        return status;
-//    }
 }

@@ -143,8 +143,18 @@ public class MudderTest {
                 .test()
                 .assertNoErrors()
                 .assertComplete()
-                .assertValue(mudResult -> {
-                    return mudResult.isCompleted() == false && mudResult.getMsg().toUpperCase().contains("NOT");
-                });
+                .assertValue(mudResult ->
+                        mudResult.isCompleted() == false && mudResult.getMsg().toUpperCase().contains("NOT"));
+    }
+
+    @Test
+    public void verifyGetUser(){
+        Mudder.maybeGetUser("mike","password")
+                .test()
+                .assertValue(mudUser -> mudUser.getName().equalsIgnoreCase("joe"))
+                .assertComplete();
+
+        Mudder.maybeGetUser("mike","password")
+                .subscribe(System.out::println,Throwable::printStackTrace);
     }
 }

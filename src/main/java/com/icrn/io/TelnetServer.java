@@ -9,6 +9,8 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
+import io.netty.util.internal.logging.InternalLoggerFactory;
+import io.netty.util.internal.logging.Slf4JLoggerFactory;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import io.reactivex.Single;
@@ -42,7 +44,6 @@ public class TelnetServer {
         TelnetServer server = new TelnetServer(executor,1,1,8080);
 
         Channel channel = server.startNetworking().blockingGet();
-
         RxBus.toObservable()
                 .subscribeOn(Schedulers.io())
                 .subscribe(message -> {
@@ -71,7 +72,7 @@ public class TelnetServer {
                 ServerBootstrap bootstrap = new ServerBootstrap();
                 bootstrap.group(bossGroup,workerGroup)
                         .channel(NioServerSocketChannel.class)
-                        .handler(new LoggingHandler(LogLevel.INFO))
+                        .handler(new LoggingHandler(LogLevel.DEBUG))
                         .childHandler(new TelnetServerInitializer());
                 final Channel channel = bootstrap.bind(PORT).sync().channel();
 

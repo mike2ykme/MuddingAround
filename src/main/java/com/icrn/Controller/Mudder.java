@@ -5,6 +5,7 @@ import com.icrn.model.*;
 import com.icrn.service.StateHandler;
 import io.reactivex.Completable;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
@@ -18,7 +19,10 @@ public class Mudder {
     @NonNull final private StateHandler stateHandler;
 
     public static Single<MudUser> maybeGetUser(String username, String password){
-        return Single.create(singleEmitter ->{
+        log.debug("Trying to get user with username: " + username);
+//        return Single.just(MudUser.makeJoe());
+        System.out.println("\tusername passed:\n" + username + "\n\tPassword passed:\n" + password);
+        return Single.<MudUser>create(singleEmitter ->{
             if ("mike".equalsIgnoreCase(username) && "password".equalsIgnoreCase(password)){
                 singleEmitter.onSuccess(MudUser.makeJoe());
 
@@ -26,7 +30,7 @@ public class Mudder {
                 singleEmitter.onError(new RuntimeException("Unable to find user"));
 
             }
-        });
+        }).subscribeOn(Schedulers.io());
     }
 
     private Single<MudResult> handleMove(MudUser user, MudCommand cmd){
@@ -56,14 +60,15 @@ public class Mudder {
     }
 
     private Single<MudResult> handleAttack(MudUser user, MudCommand cmd){
-//        return Single.just(MudResult.noActionSuccess("ABC"));
+        log.debug("HandleAttack() called. user:\n" + user.toString() +"\nCMD:\n"+cmd.toString());
         return Single.create(singleEmitter -> {
            user.performAction();
-
+           log.info(user.getName() + " has had performAction() called");
            cmd.getTarget().ifPresent(otherUserName->{
                this.stateHandler.getEntityByName(otherUserName)
                        .subscribe(entity -> {
                            if (entity.getRoomLocation() == user.getRoomLocation()) {
+                               log.info("other user existed and they were in the same room");
                                try {
                                    int dmg = user.attack(entity);
                                    this.stateHandler.saveEntityState(entity).blockingGet();
@@ -75,14 +80,13 @@ public class Mudder {
                                    singleEmitter.onError(e);
                                }
                            } else {
+                               log.info("other user was not in the same room. Other user: " + entity.getName());
                                singleEmitter.onSuccess(MudResult
                                        .noActionFailure("You're not in the same room as " + entity.getName()));
 
                            }
-
                        },singleEmitter::onError);
 
-//               singleEmitter.onSuccess(MudResult.noActionFailure("Unable to do attack: " + ));
            });
 
            this.stateHandler.saveEntityState(user);

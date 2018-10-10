@@ -38,7 +38,7 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
             response = "Have a good day!\r\n";
             close = true;
 //            ctx.channel().close();
-            ctx.channel().parent().close();
+//            ctx.channel().parent().close();
         } else {
             response = "Did you say '" + request + "'?\r\n";
         }
@@ -53,6 +53,8 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         // if the client has sent 'bye'.
         if (close) {
             future.addListener(ChannelFutureListener.CLOSE);
+            ChannelFuture channelFuture = ctx.channel().parent().closeFuture();
+//            channelFuture.sync();
         }
     }
 
