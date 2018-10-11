@@ -6,6 +6,8 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.string.StringEncoder;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
@@ -29,6 +31,7 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String input) throws Exception {
+        log.info("IN CHANNEL READ 0");
         System.out.println("IN CHANNEL READ 0");
         String response = null;
         if (this.username == null){
@@ -59,18 +62,23 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
         }
 
         if (this.username != null && this.password != null){
-            log.debug("trying to get Mudder.maybeGetUser from login handler");
+//            log.debug("trying to get Mudder.maybeGetUser from login handler");
             Mudder.maybeGetUser(this.username,this.password)
                     .subscribe(mudUser -> {
                         System.out.println(mudUser.toString());
                                 ctx.pipeline().addLast(new TelnetServerHandler());
-                                ctx.pipeline().remove(this);
+//                                ctx.pipeline().addBefore("LOGGING","serverHandler", new TelnetServerHandler());
+//                                ctx.pipeline().addBefore(ctx.name(),"LOGGING", new LoggingHandler());
+//                        ctx.pipeline().addLast("logger", new LoggingHandler());
+                                ctx.pipeline().remove(TelnetServerLoginHandler.class);
+
+//                                ctx.pipeline().re
                                 ctx.fireChannelActive();
 
                             },
                             throwable -> {
-                                System.err.println("ERROR in MAYBE subscribe");
-                                throwable.printStackTrace();
+//                                System.err.println("ERROR in MAYBE subscribe");
+//                                throwable.printStackTrace();
                                 log.info(throwable.toString());
                                 int loginNum = this.loginCount.incrementAndGet();
                                 if (loginNum >2) {

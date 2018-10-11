@@ -6,10 +6,12 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
 import java.util.Date;
 
+@Slf4j
 public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
@@ -28,6 +30,8 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, String request) throws Exception {
         String response;
+        log.debug( request);
+        log.info("channelRead0");
         boolean close = false;
         if (request.isEmpty()) {
             response = "Please type something.\r\n";
@@ -60,6 +64,9 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
 
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx){
+        log.debug("CALLING CHANNEL READ COMPLETE FROM ServerHandler");
+        log.info("CALLING CHANNEL READ COMPLETE FROM ServerHandler");
+        System.out.println("CALLING CHANNEL READ COMPLETE FROM ServerHandler");
         ctx.flush();
     }
 

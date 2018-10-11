@@ -27,7 +27,8 @@ public class Mudder {
                 singleEmitter.onSuccess(MudUser.makeJoe());
 
             } else {
-                singleEmitter.onError(new RuntimeException("Unable to find user"));
+//                singleEmitter.onError(new RuntimeException("Unable to find user"));
+                singleEmitter.onSuccess(MudUser.makeJoe());
 
             }
         }).subscribeOn(Schedulers.io());
