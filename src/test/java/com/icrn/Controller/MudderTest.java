@@ -149,12 +149,32 @@ public class MudderTest {
 
     @Test
     public void verifyGetUser(){
-        Mudder.maybeGetUser("mike","password")
+        this.mudder.maybeGetUser("mike","password")
                 .test()
                 .assertValue(mudUser -> mudUser.getName().equalsIgnoreCase("joe"))
                 .assertComplete();
 
-        Mudder.maybeGetUser("mike","password")
+        this.mudder.maybeGetUser("mike","password")
                 .subscribe(System.out::println,Throwable::printStackTrace);
+    }
+
+    @Test
+    public void joeCanTalkToMoeInSameRoom(){
+        MudUser joe = this.stateHandler.getUserById(1L).blockingGet();
+        MudUser moe = this.stateHandler.getUserById(2L).blockingGet();
+
+
+        MudCommand cmd = MudCommand.of(Actions.TALK,null,joe); //Talking means saying it out loud in a room
+
+        this.mudder.HandleAction(cmd)
+                .test()
+                .assertNoErrors()
+                .assertComplete();
+
+        cmd = MudCommand.of(Actions.TALK,"HELLO",joe);
+        this.mudder.HandleAction(cmd)
+                .test()
+                .assertNoErrors()
+                .assertComplete();
     }
 }

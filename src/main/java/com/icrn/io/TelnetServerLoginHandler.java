@@ -62,34 +62,27 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
         }
 
         if (this.username != null && this.password != null){
-//            log.debug("trying to get Mudder.maybeGetUser from login handler");
-            Mudder.maybeGetUser(this.username,this.password)
-                    .subscribe(mudUser -> {
-                        System.out.println(mudUser.toString());
-                                ctx.pipeline().addLast(new TelnetServerHandler());
-//                                ctx.pipeline().addBefore("LOGGING","serverHandler", new TelnetServerHandler());
-//                                ctx.pipeline().addBefore(ctx.name(),"LOGGING", new LoggingHandler());
-//                        ctx.pipeline().addLast("logger", new LoggingHandler());
-                                ctx.pipeline().remove(TelnetServerLoginHandler.class);
-
-//                                ctx.pipeline().re
-                                ctx.fireChannelActive();
-
-                            },
-                            throwable -> {
-//                                System.err.println("ERROR in MAYBE subscribe");
-//                                throwable.printStackTrace();
-                                log.info(throwable.toString());
-                                int loginNum = this.loginCount.incrementAndGet();
-                                if (loginNum >2) {
-                                    ctx.channel().close();
-                                }else {
-                                    this.username = null;
-                                    this.password = null;
-                                    ChannelFuture channelFuture = ctx.writeAndFlush("\r\nInvalid password and or username.\r\n\r\nPlease type in your username or 'bye' to quit.\r\n");
-                                    channelFuture.sync();
-                                }
-                            });
+            log.info("trying to get user: " + this.username + " from login handler");
+//            Mudder.maybeGetUser(this.username,this.password)
+//                    .subscribe(mudUser -> {
+//                        System.out.println(mudUser.toString());
+//                                ctx.pipeline().addLast(new TelnetServerHandler());
+//                                ctx.pipeline().remove(TelnetServerLoginHandler.class);
+//
+//                                ctx.fireChannelActive();
+//                            },
+//                            throwable -> {
+//                                log.info(throwable.toString());
+//                                int loginNum = this.loginCount.incrementAndGet();
+//                                if (loginNum >2) {
+//                                    ctx.channel().close();
+//                                }else {
+//                                    this.username = null;
+//                                    this.password = null;
+//                                    ChannelFuture channelFuture = ctx.writeAndFlush("\r\nInvalid password and or username.\r\n\r\nPlease type in your username or 'bye' to quit.\r\n");
+//                                    channelFuture.sync();
+//                                }
+//                            });
         }else {
             ChannelFuture future = ctx.write(response);
             System.out.println("\t\tIN Server Handler");
@@ -98,8 +91,6 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
                 future.addListener(ChannelFutureListener.CLOSE);
             }
         }
-
-
     }
 
     @Override

@@ -38,12 +38,14 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         } else if ("bye".equals(request.toLowerCase())) {
             response = "Have a good day!\r\n";
             close = true;
-        } else if ("shutdown".equalsIgnoreCase(request)){
+        }
+        else if ("shutdown".equalsIgnoreCase(request)){
             response = "Have a good day!\r\n";
             close = true;
-//            ctx.channel().close();
+            log.info("SHUTTING DOWN PARENT");
 //            ctx.channel().parent().close();
-        } else {
+        }
+        else {
             response = "Did you say '" + request + "'?\r\n";
         }
         // We do not need to write a ChannelBuffer here.
@@ -56,9 +58,11 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         // Close the connection after sending 'Have a good day!'
         // if the client has sent 'bye'.
         if (close) {
+            if ("shutdown".equalsIgnoreCase(request)) {
+                log.info("SHUTTING DOWN PARENT");
+                ctx.channel().parent().close();
+            }
             future.addListener(ChannelFutureListener.CLOSE);
-            ChannelFuture channelFuture = ctx.channel().parent().closeFuture();
-//            channelFuture.sync();
         }
     }
 

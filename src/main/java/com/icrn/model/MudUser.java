@@ -1,6 +1,5 @@
 package com.icrn.model;
 
-import com.icrn.exceptions.TO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
@@ -37,15 +36,11 @@ public class MudUser implements Entity {
             return Optional.of(this.lastAttackedById);
     }
 
-
     public LocalDateTime performAction(){
         this.lastActionPerformedTime = LocalDateTime.now();
         return lastActionPerformedTime;
     }
     public boolean canPerformAction() {
-        int lastDoY = lastActionPerformedTime.getDayOfYear();
-        int nowDoY = LocalDateTime.now().getDayOfYear();
-
         if (lastActionPerformedTime
                 .plusSeconds((SECONDS_TO_COMPARE/this.DEX))
                 .isBefore(LocalDateTime.now())){

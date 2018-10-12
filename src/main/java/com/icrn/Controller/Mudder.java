@@ -3,7 +3,6 @@ package com.icrn.Controller;
 import com.icrn.dao.EntityDao;
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
-import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import lombok.AllArgsConstructor;
@@ -18,7 +17,7 @@ public class Mudder {
 //    @NonNull final private EntityDao entityDao;
     @NonNull final private StateHandler stateHandler;
 
-    public static Single<MudUser> maybeGetUser(String username, String password){
+    public Single<MudUser> maybeGetUser(String username, String password){
         log.debug("Trying to get user with username: " + username);
 //        return Single.just(MudUser.makeJoe());
         System.out.println("\tusername passed:\n" + username + "\n\tPassword passed:\n" + password);
@@ -27,8 +26,7 @@ public class Mudder {
                 singleEmitter.onSuccess(MudUser.makeJoe());
 
             } else {
-//                singleEmitter.onError(new RuntimeException("Unable to find user"));
-                singleEmitter.onSuccess(MudUser.makeJoe());
+                singleEmitter.onError(new RuntimeException("Unable to find user"));
 
             }
         }).subscribeOn(Schedulers.io());
@@ -117,7 +115,9 @@ public class Mudder {
         MudUser user   = this.stateHandler.getUserById(cmd.getRequester().getId())
                 .blockingGet();
 
-        if (user.canPerformAction()) {
+        if (user.canPerformAction()
+                || cmd.getType() == Actions.TALK
+                || cmd.getType() == Actions.WHISPER ) {
             switch (cmd.getType()) {
                 case ATTACK:
                     return this.handleAttack(user,cmd);
@@ -131,6 +131,12 @@ public class Mudder {
                 case MOVE:
                     return this.handleMove(user,cmd);
 
+                case TALK:
+                    return this.handleTalk(user,cmd);
+
+                case WHISPER:
+                    return this.handleWhisper(user,cmd);
+
                 default:
                     return Single.create(singleEmitter ->
                             singleEmitter.onError(new RuntimeException("Unable to find command")));
@@ -143,5 +149,34 @@ public class Mudder {
         }
     }
 
+    private Single<MudResult> handleWhisper(MudUser user, MudCommand cmd) {
+        return null;
+    }
 
+    private Single<MudResult> handleTalk(MudUser user, MudCommand cmd) {
+        return Single.create(singleEmitter -> {
+            if (cmd.getTarget().isPresent()) {
+                String message = cmd.getTarget().get();
+
+                this.stateHandler.getAllEntitiesByRoom(user.getRoomLocation())
+                        .filter(entity -> entity.getType() == EntityType.USER)
+                        .map(entity -> (MudUser) entity)
+                        .subscribe(userInRoom -> {
+                            this.stateHandler.sendUserMessage(userInRoom, message)
+                                    .subscribeOn(Schedulers.io())
+                                    .subscribe(aBoolean ->{
+                                            String output = user.getName() + " said " + message + "to " + userInRoom;
+                                            System.out.println(output);
+                                            log.debug(output);
+                                            },singleEmitter::onError);
+                        }, singleEmitter::onError);
+
+            } else {
+                String msg = "Nothing said to everyone in the room";
+                System.out.println(msg);
+                log.debug(msg);
+                singleEmitter.onSuccess(MudResult.noActionSuccess(msg));
+            }
+        });
+    }
 }

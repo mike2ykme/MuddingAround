@@ -24,8 +24,6 @@ public class TelnetServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(DECODER);
         pipeline.addLast(ENCODER);
 
-//        pipeline.addLast(new TelnetServerHandler());
         pipeline.addLast("login",new TelnetServerLoginHandler());
-//        pipeline.addLast("LOGGING",new LoggingHandler());
     }
 }

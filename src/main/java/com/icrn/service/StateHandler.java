@@ -49,15 +49,26 @@ public class StateHandler {
 
     }
 
-    public Observable<Entity> getAllOnlineEntities() {
+    public Observable<Entity> getAllEntities(){
         return Observable.create(observableEmitter -> {
-            entities.entrySet().stream()
-                .map(Map.Entry::getValue)
-                .filter(Entity::isOnline)
-            .forEach(observableEmitter::onNext);
+            this.entities.entrySet().stream()
+                    .map(Map.Entry::getValue)
+                    .forEach(observableEmitter::onNext);
 
             observableEmitter.onComplete();
         });
+    }
+    public Observable<Entity> getAllOnlineEntities() {
+//        return Observable.create(observableEmitter -> {
+//            entities.entrySet().stream()
+//                .map(Map.Entry::getValue)
+//                .filter(Entity::isOnline)
+//            .forEach(observableEmitter::onNext);
+//
+//            observableEmitter.onComplete();
+//        });
+        return this.getAllEntities()
+                .filter(Entity::isOnline);
     }
 
     public Single<Entity> saveEntityState(Entity entity){
@@ -178,5 +189,9 @@ public class StateHandler {
 
         });
 
+    }
+
+    public Single<Boolean> sendUserMessage(MudUser userInRoom, String s) {
+        return null;
     }
 }

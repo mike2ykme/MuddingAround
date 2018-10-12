@@ -37,7 +37,7 @@ public class TelnetClient {
 
                 lastWriteFuture = ch.writeAndFlush(line + "\r\n");
 
-                if ("bye".equalsIgnoreCase(line)) {
+                if ("bye".equalsIgnoreCase(line) || "shutdown".equalsIgnoreCase(line)) {
                     ch.closeFuture().sync();
                     break;
                 }
