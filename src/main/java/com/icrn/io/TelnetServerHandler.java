@@ -1,7 +1,6 @@
 package com.icrn.io;
 
-import com.icrn.model.Message;
-import com.icrn.model.RxBus;
+import com.icrn.model.*;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,7 +12,11 @@ import java.util.Date;
 
 @Slf4j
 public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
+    private final MudUser mudUser;
 
+    public TelnetServerHandler(MudUser mudUser){
+        this.mudUser = mudUser;
+    }
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         ctx.write("Welcome to " + InetAddress.getLocalHost().getHostName() + "!\r\n");
@@ -53,8 +56,15 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         ChannelFuture future = ctx.write(response);
         System.out.println("IN Server Handler");
         System.out.println(Thread.currentThread().toString());
+
+
+
         //Need to have something that takes all these and then converts them into CMD objects
-        RxBus.send(new Message("ABC","DEF",request));
+
+//        RxBus.send(new Message("ABC","DEF",request));
+        MudCommand command = MudCommand.parse(request,mudUser);
+        WorkQueue.getInstance().offerCommand(command).subscribe();
+
         // Close the connection after sending 'Have a good day!'
         // if the client has sent 'bye'.
         if (close) {

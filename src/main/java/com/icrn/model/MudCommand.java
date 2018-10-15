@@ -4,6 +4,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 @Data
@@ -23,5 +25,11 @@ public class MudCommand {
             opt = Optional.of(target);
 
         return new MudCommand(type,opt,requester);
+    }
+
+    public static MudCommand parse(String request, MudUser mudUser) {
+        List<String> cmds = Arrays.asList(request.split("\\s+"));
+
+        return MudCommand.of(Actions.valueOf(cmds.get(0).toUpperCase()),cmds.get(1),mudUser);
     }
 }

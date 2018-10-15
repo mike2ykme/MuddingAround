@@ -3,12 +3,16 @@ package com.icrn.Controller;
 import com.icrn.dao.EntityDao;
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
+import io.netty.handler.codec.mqtt.MqttMessageBuilders;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+
+import java.util.function.Consumer;
 
 @Getter
 @AllArgsConstructor
@@ -17,7 +21,7 @@ public class Mudder {
 //    @NonNull final private EntityDao entityDao;
     @NonNull final private StateHandler stateHandler;
 
-    public Single<MudUser> maybeGetUser(String username, String password){
+    public static Single<MudUser> maybeGetUser(String username, String password){
         log.debug("Trying to get user with username: " + username);
 //        return Single.just(MudUser.makeJoe());
         System.out.println("\tusername passed:\n" + username + "\n\tPassword passed:\n" + password);
@@ -31,6 +35,14 @@ public class Mudder {
             }
         }).subscribeOn(Schedulers.io());
     }
+
+    public static Completable maybeRegisterUser(MudUser mudUser, Consumer<String> f) {
+        return Completable.complete();
+    }
+
+//    public static Completable maybeRegisterUser(MudUser mudUser) {
+//        return Completable.complete();
+//    }
 
     private Single<MudResult> handleMove(MudUser user, MudCommand cmd){
         return Single.create(singleEmitter -> {

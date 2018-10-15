@@ -12,4 +12,5 @@ public class Message {
     public static Message of(String recipient, String sender, String Message){
         return new Message(recipient,sender,Message);
     }
+
 }
