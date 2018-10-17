@@ -22,7 +22,6 @@ public class WorkQueue {
 
             } else {
                 completableEmitter.onError(new RuntimeException("Unable to add element to WorkQueue"));
-
             }
         });
     }
@@ -48,6 +47,6 @@ public class WorkQueue {
                     observableEmitter.onNext(cmd);
             }
             observableEmitter.onComplete();
-        }).observeOn(Schedulers.io());
+        }).subscribeOn(Schedulers.io());
     }
 }

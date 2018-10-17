@@ -21,7 +21,7 @@ public class Mudder {
 //    @NonNull final private EntityDao entityDao;
     @NonNull final private StateHandler stateHandler;
 
-    public static Single<MudUser> maybeGetUser(String username, String password){
+    public Single<MudUser> maybeGetUser(String username, String password){
         log.debug("Trying to get user with username: " + username);
 //        return Single.just(MudUser.makeJoe());
         System.out.println("\tusername passed:\n" + username + "\n\tPassword passed:\n" + password);
@@ -36,13 +36,10 @@ public class Mudder {
         }).subscribeOn(Schedulers.io());
     }
 
-    public static Completable maybeRegisterUser(MudUser mudUser, Consumer<String> f) {
-        return Completable.complete();
+    public Completable maybeRegisterUser(MudUser mudUser, Consumer<String> func) {
+        return this.stateHandler.registerUserOnline(mudUser,func);
     }
 
-//    public static Completable maybeRegisterUser(MudUser mudUser) {
-//        return Completable.complete();
-//    }
 
     private Single<MudResult> handleMove(MudUser user, MudCommand cmd){
         return Single.create(singleEmitter -> {

@@ -10,19 +10,16 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
 import io.reactivex.Single;
-import io.reactivex.schedulers.Schedulers;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Slf4j
 @Data
 public class TelnetServer {
 
-    private final Executor executor;
+    private final ExecutorService executor;
     private final int numThreadsBoss;
     private final int numThreadsWorker;
     private final int PORT;
@@ -31,7 +28,7 @@ public class TelnetServer {
     private EventLoopGroup workerGroup;
 //    static private final Subject<Message> MSG_BUS = PublishSubject.create();
 
-    public TelnetServer(Executor executor, int numThreadsBoss, int numThreadsWorker,int PORT,Mudder mudder){
+    public TelnetServer(ExecutorService executor, int numThreadsBoss, int numThreadsWorker,int PORT,Mudder mudder){
         this.executor = executor;
         this.numThreadsBoss = numThreadsBoss;
         this.numThreadsWorker = numThreadsWorker;
@@ -40,7 +37,7 @@ public class TelnetServer {
     }
 
     public static void main(String... args)throws Exception{
-        Executor executor = Executors.newCachedThreadPool();
+//        Executor executor = Executors.newCachedThreadPool();
 //        TelnetServer server = new TelnetServer(executor,1,1,8080,null);
 //        Channel channel = server.startNetworking().blockingGet();
 //        log.info("Server has been started");

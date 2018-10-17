@@ -5,23 +5,26 @@ import com.icrn.model.Entity;
 import com.icrn.model.EntityType;
 import com.icrn.model.MudUser;
 import com.icrn.model.Room;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Observable;
 import io.reactivex.Single;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 
 @Slf4j
 public class StateHandler {
     @NonNull Map<Long,Entity> entities;
+    private final static HashMap<Long,Consumer<String>> communicationMap = new HashMap<>();
     EntityDao entityDao = null;
 
     public StateHandler(Map<Long,Entity> entities){
@@ -191,7 +194,56 @@ public class StateHandler {
 
     }
 
-    public Single<Boolean> sendUserMessage(MudUser userInRoom, String s) {
-        return null;
+    public Single<Boolean> sendUserMessage(MudUser user, String msg) {
+        return Single.create(singleEmitter -> {
+            val comm = StateHandler.communicationMap.get(user.getId());
+           if (comm != null){
+               comm.accept(msg);
+           }else {
+               log.info("No communication channel for userName: " + user.getName() + " id:" + user.getId());
+               singleEmitter.onError(new RuntimeException("Unable to find user in communication map. User might have disconnected"));
+           }
+        });
+    }
+
+    public Completable registerUserOnline(MudUser mudUser, Consumer<String> func) {
+        return Completable.create(completableEmitter -> {
+           if (!completableEmitter.isDisposed()){
+               val possibleUserKey = StateHandler.communicationMap.put(mudUser.getId(),func);
+               if (possibleUserKey !=null){
+                   log.info("User might have disconnected as I'm getting a login for the same user: " + mudUser.getName());
+               }
+
+               // We need to make sure the entity is valid and stored in our state, if so let's update the entity to online
+               MudUser user ;
+               if (null != ( user = (MudUser)this.entities.get(mudUser.getId()))){
+                   user.setOnline(true);
+                   this.saveEntityState(user)
+                           .subscribe(ignore ->
+                                   completableEmitter.onComplete()
+                                   ,completableEmitter::onError);
+               }else {
+                   completableEmitter.onError(new RuntimeException("Unable to find a user to put online"));
+               }
+           }
+        });
+    }
+    public Completable registerUserOffline(MudUser mudUser){
+        return Completable.create(completableEmitter -> {
+            val possibleUserKey = StateHandler.communicationMap.remove(mudUser.getId());
+            if (possibleUserKey == null){
+                log.info("I have tried to remove a user comm function when none existed. Should not disconnect logged out users again");
+            }
+            MudUser user;
+            if (null == ( user = (MudUser)this.entities.get(mudUser.getId()))){
+                user.setOnline(false);
+                this.saveEntityState(user)
+                        .subscribe(ignore ->
+                                        completableEmitter.onComplete()
+                                ,completableEmitter::onError);
+            }else {
+                completableEmitter.onError(new RuntimeException("Unable to find a user to put offline"));
+            }
+        });
     }
 }

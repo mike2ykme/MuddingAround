@@ -64,18 +64,20 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
 //        RxBus.send(new Message("ABC","DEF",request));
 //        MudCommand command = MudCommand.parse(request,mudUser);
 //        WorkQueue.getInstance().offerCommand(command).subscribe();
-        System.out.println("Thread running in the TelnetServerHandler before offering command " +
-                Thread.currentThread());
+//        System.out.println("Thread running in the TelnetServerHandler before offering command " +
+//                Thread.currentThread());
         WorkQueue.getInstance().offerCommand(MudCommand.of(Actions.TALK,null,this.mudUser))
                 .subscribe(() -> {
-                    System.out.println("Thread returning from subscribe success on offering command " + Thread.currentThread());
-                    log.debug("COMMAND WAS ACCEPTED");
+//                    System.out.println("Thread returning from subscribe success on offering command " + Thread.currentThread());
+//                    log.debug("COMMAND WAS ACCEPTED");
 
                 },throwable -> {
                     throw new RuntimeException(throwable);
                 });
+
         // Close the connection after sending 'Have a good day!'
         // if the client has sent 'bye'.
+
         if (close) {
             if ("shutdown".equalsIgnoreCase(request)) {
                 log.info("SHUTTING DOWN PARENT");
@@ -88,7 +90,6 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
     @Override
     public void channelReadComplete(ChannelHandlerContext ctx){
         log.debug("CALLING CHANNEL READ COMPLETE FROM ServerHandler");
-        log.info("CALLING CHANNEL READ COMPLETE FROM ServerHandler");
         System.out.println("CALLING CHANNEL READ COMPLETE FROM ServerHandler");
         ctx.flush();
     }

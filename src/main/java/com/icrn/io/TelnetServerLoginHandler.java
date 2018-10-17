@@ -68,7 +68,7 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
             this.mudder.maybeGetUser(this.username,this.password)
                     .subscribe(mudUser -> {
                         System.out.println(mudUser.toString());
-                                Mudder.maybeRegisterUser(mudUser,(String msg)->{
+                                this.mudder.maybeRegisterUser(mudUser,(String msg)->{
                                     ctx.writeAndFlush(msg);
                                 })
                                         .subscribe(() -> {
@@ -78,6 +78,8 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
                                             ctx.fireChannelActive();
 
                                         },throwable ->{
+                                            System.out.println(throwable);
+                                            log.info("Unable to register a user as online");
                                             throw new RuntimeException(throwable);
                                         });
                             },
@@ -86,6 +88,8 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
                                 int loginNum = this.loginCount.incrementAndGet();
                                 if (loginNum >2) {
                                     ctx.channel().close();
+                                    log.info("Unable to login for: " + this.username);
+                                    throw new RuntimeException("Unable to login for user");
                                 }else {
                                     this.username = null;
                                     this.password = null;
