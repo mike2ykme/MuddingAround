@@ -2,10 +2,13 @@ package com.icrn.model;
 
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import io.reactivex.schedulers.Schedulers;
+import lombok.Data;
+
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-
+@Data
 public class WorkQueue {
     private final LinkedBlockingQueue<MudCommand> WORK_QUEUE = new LinkedBlockingQueue<>();
 
@@ -13,6 +16,7 @@ public class WorkQueue {
 
     public Completable offerCommand(MudCommand command) {
         return Completable.create(completableEmitter -> {
+            System.out.println("Thread inside of offerCommand " + Thread.currentThread());
             if(WorkQueue.getInstance().WORK_QUEUE.offer(command,1,TimeUnit.SECONDS)){
                 completableEmitter.onComplete();
 
@@ -33,7 +37,7 @@ public class WorkQueue {
 
     public Observable<MudCommand> toObservable(){
 
-        return Observable.create(observableEmitter -> {
+        return Observable.<MudCommand>create(observableEmitter -> {
             MudCommand cmd;
 
             while (true){
@@ -44,6 +48,6 @@ public class WorkQueue {
                     observableEmitter.onNext(cmd);
             }
             observableEmitter.onComplete();
-        });
+        }).observeOn(Schedulers.io());
     }
 }

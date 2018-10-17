@@ -62,9 +62,18 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         //Need to have something that takes all these and then converts them into CMD objects
 
 //        RxBus.send(new Message("ABC","DEF",request));
-        MudCommand command = MudCommand.parse(request,mudUser);
-        WorkQueue.getInstance().offerCommand(command).subscribe();
+//        MudCommand command = MudCommand.parse(request,mudUser);
+//        WorkQueue.getInstance().offerCommand(command).subscribe();
+        System.out.println("Thread running in the TelnetServerHandler before offering command " +
+                Thread.currentThread());
+        WorkQueue.getInstance().offerCommand(MudCommand.of(Actions.TALK,null,this.mudUser))
+                .subscribe(() -> {
+                    System.out.println("Thread returning from subscribe success on offering command " + Thread.currentThread());
+                    log.debug("COMMAND WAS ACCEPTED");
 
+                },throwable -> {
+                    throw new RuntimeException(throwable);
+                });
         // Close the connection after sending 'Have a good day!'
         // if the client has sent 'bye'.
         if (close) {

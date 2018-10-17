@@ -17,6 +17,11 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
     private String password = null; // DON'T DO THIS IN ANYTHING REAL BECAUSE OF HOW Java Stores Strings. You could see the PW if everything crashes or if someone is examining a crash dump
     private boolean close = false;
     private AtomicInteger loginCount = new AtomicInteger(0);
+    private final Mudder mudder;
+
+    public TelnetServerLoginHandler(Mudder mudder) {
+        this.mudder = mudder;
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -60,7 +65,7 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
 
         if (this.username != null && this.password != null){
             log.info("trying to get user: " + this.username + " from login handler");
-            Mudder.maybeGetUser(this.username,this.password)
+            this.mudder.maybeGetUser(this.username,this.password)
                     .subscribe(mudUser -> {
                         System.out.println(mudUser.toString());
                                 Mudder.maybeRegisterUser(mudUser,(String msg)->{
