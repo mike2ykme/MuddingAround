@@ -1,6 +1,6 @@
 package com.icrn.model;
 
 public enum Actions {
-    ATTACK, DEFEND, WAIT, MOVE, TALK, WHISPER;
+    BADCOMMAND, ATTACK, DEFEND, WAIT, MOVE, TALK, WHISPER;
 
 }

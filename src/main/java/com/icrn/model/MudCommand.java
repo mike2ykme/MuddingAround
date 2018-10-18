@@ -16,6 +16,9 @@ public class MudCommand {
     private MudUser requester;
 
     public static MudCommand of(Actions type, String target, MudUser requester){
+        if (type == null)
+            type = Actions.BADCOMMAND;
+
         Optional<String> opt = null;
 
         if(target == null)
@@ -30,6 +33,10 @@ public class MudCommand {
     public static MudCommand parse(String request, MudUser mudUser) {
         List<String> cmds = Arrays.asList(request.split("\\s+"));
 
-        return MudCommand.of(Actions.valueOf(cmds.get(0).toUpperCase()),cmds.get(1),mudUser);
+        try {
+            return MudCommand.of(Actions.valueOf(cmds.get(0).toUpperCase()),cmds.get(1),mudUser);
+        } catch (IllegalArgumentException e) {
+            return MudCommand.of(Actions.BADCOMMAND,null,null);
+        }
     }
 }
