@@ -1,4 +1,4 @@
-package com.icrn.Controller;
+package com.icrn.controller;
 
 import static org.mockito.Mockito.*;
 

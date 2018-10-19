@@ -1,6 +1,6 @@
 package com.icrn.io;
 
-import com.icrn.Controller.Mudder;
+import com.icrn.controller.Mudder;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;

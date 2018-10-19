@@ -89,7 +89,7 @@ public class Room implements Entity {
     public void addRoomDirection(Movement movement, Long otherRoomId){
         this.allowedDirections.put(movement,otherRoomId);
     }
-    public long getRoomFromDirection(Movement movement){
+    public long getRoomIdFromDirection(Movement movement){
         return this.allowedDirections.get(movement);
     }
 }

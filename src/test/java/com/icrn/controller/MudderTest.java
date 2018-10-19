@@ -1,13 +1,10 @@
-package com.icrn.Controller;
-
-import static org.mockito.Mockito.*;
+package com.icrn.controller;
 
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.Map;
