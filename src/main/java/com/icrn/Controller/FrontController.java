@@ -1,12 +1,18 @@
-package com.icrn.Controller;
+package com.icrn.controller;
 
-import com.icrn.model.EntityType;
-import com.icrn.model.MudUser;
+import com.icrn.exceptions.CannotPerformAction;
+import com.icrn.model.*;
 import com.icrn.service.StateHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
+import io.reactivex.Single;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+
+import javax.swing.*;
 
 @Slf4j
 @Data
@@ -28,6 +34,33 @@ public class FrontController {
                         maybeEmitter.onComplete();
                     });
             maybeEmitter.onComplete();
+        });
+    }
+
+    public Completable registerUserOnline(MudUser mudUser, ChannelHandlerContext ctx) {
+        return this.stateHandler.registerUserOnline(mudUser,ctx);
+    }
+
+    public Completable registerUserOffline(MudUser mudUser) {
+        return this.stateHandler.registerUserOffline(mudUser);
+    }
+
+    public Single<ActionResult> singleMoveUser(MudUser mudUser, Movement direction) {
+        return Single.create(singleEmitter -> {
+            this.stateHandler.getEntityById(mudUser.getRoomLocation())
+                    .filter(entity -> entity.getType() == EntityType.ROOM)
+                    .map(entity -> (Room)entity)
+                    .subscribe(room -> {
+                        if (room.allowsMovement(direction)){
+                            mudUser.setRoomLocation(room.getRoomIdFromDirection(direction));
+                            this.stateHandler.saveEntityState(mudUser)
+                                    .subscribe(entity -> {
+                                        singleEmitter.onSuccess(ActionResult.success("User was able to move in that direction"));
+                                    },singleEmitter::onError);
+                        }else {
+                            singleEmitter.onSuccess(ActionResult.failure("User is unable to move in that direction"));
+                        }
+                    },singleEmitter::onError);
         });
     }
 }

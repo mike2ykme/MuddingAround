@@ -1,18 +1,13 @@
-package com.icrn.Controller;
+package com.icrn.controller;
 
-import com.icrn.dao.EntityDao;
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
-import io.netty.handler.codec.mqtt.MqttMessageBuilders;
-import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.reactivex.schedulers.Schedulers;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.function.Consumer;
 
 @Getter
 @AllArgsConstructor
@@ -36,9 +31,9 @@ public class Mudder {
         }).subscribeOn(Schedulers.io());
     }
 
-    public Completable maybeRegisterUser(MudUser mudUser, Consumer<String> func) {
-        return this.stateHandler.registerUserOnline(mudUser,func);
-    }
+//    public Completable maybeRegisterUser(MudUser mudUser, Consumer<String> func) {
+//        return this.stateHandler.registerUserOnline(mudUser,func);
+//    }
 
 
     private Single<MudResult> handleMove(MudUser user, MudCommand cmd){
@@ -49,7 +44,7 @@ public class Mudder {
                             String direction = cmd.getTarget().get();  // Where are we going
                             Movement movement = MovementDirection.of(direction);    //Wherre we're going in movment form
                             if (room.allowsMovement(movement)){ // If we can go there
-                                user.setRoomLocation(room.getRoomFromDirection(movement));
+                                user.setRoomLocation(room.getRoomIdFromDirection(movement));
                                 user.performAction();
                                 stateHandler.saveEntityState(user);
                                 singleEmitter.onSuccess(MudResult.noActionSuccess("You have moved"));
@@ -188,4 +183,5 @@ public class Mudder {
             }
         });
     }
+
 }

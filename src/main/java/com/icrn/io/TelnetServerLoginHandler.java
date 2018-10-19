@@ -1,6 +1,6 @@
 package com.icrn.io;
 
-import com.icrn.Controller.Mudder;
+import com.icrn.controller.Mudder;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -68,20 +68,18 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
             this.mudder.maybeGetUser(this.username,this.password)
                     .subscribe(mudUser -> {
                         System.out.println(mudUser.toString());
-                                this.mudder.maybeRegisterUser(mudUser,(String msg)->{
-                                    ctx.writeAndFlush(msg);
-                                })
-                                        .subscribe(() -> {
-                                            ctx.pipeline().addLast(new TelnetServerHandler(mudUser));
-                                            ctx.pipeline().remove(TelnetServerLoginHandler.class);
-
-                                            ctx.fireChannelActive();
-
-                                        },throwable ->{
-                                            System.out.println(throwable);
-                                            log.info("Unable to register a user as online");
-                                            throw new RuntimeException(throwable);
-                                        });
+//                                this.mudder.maybeRegisterUser(mudUser,ctx)
+//                                        .subscribe(() -> {
+//                                            ctx.pipeline().addLast(new TelnetServerHandler(mudUser));
+//                                            ctx.pipeline().remove(TelnetServerLoginHandler.class);
+//
+//                                            ctx.fireChannelActive();
+//
+//                                        },throwable ->{
+//                                            System.out.println(throwable);
+//                                            log.info("Unable to register a user as online");
+//                                            throw new RuntimeException(throwable);
+//                                        });
                             },
                             throwable -> {
                                 log.info(throwable.toString());
