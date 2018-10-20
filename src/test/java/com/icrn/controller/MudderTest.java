@@ -26,11 +26,11 @@ public class MudderTest {
         joe2.setName("Moe");
 
         Room room = new Room(0L);
-        room.setAllowedDirections(new HashMap<>());
+//        room.setAllowedDirections(new HashMap<>());
         room.addRoomDirection(Movement.NORTH,10L);
 
         Room room10 = new Room(10L);
-        room10.setAllowedDirections(new HashMap<>());
+//        room10.setAllowedDirections(new HashMap<>());
         room10.addRoomDirection(Movement.SOUTH,0L);
 
         final Map<Long, Entity> longEntityHashMap = new ConcurrentHashMap<>();

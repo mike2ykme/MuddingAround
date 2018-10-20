@@ -17,27 +17,20 @@ public class FrontControllerTest {
     FrontController controller;
     StateHandler stateHandler;
     ChannelHandlerContext mockCtx;
+
     @Before
     public void setup(){
-    this.joe = MudUser.makeJoe();
-    HashMap<Long, Entity> map = new HashMap<>();
-    map.put(joe.getId(),joe);
-    this.stateHandler = new StateHandler(map);
+        this.joe = MudUser.makeJoe();
+        HashMap<Long, Entity> map = new HashMap<>();
+        map.put(joe.getId(),joe);
 
-
-//    when(stateHandler.getEntityByName("joe")).thenReturn(Maybe.just(MudUser.makeJoe()));
-
-    this.controller = new FrontController(stateHandler);
-
-     this.mockCtx = mock(ChannelHandlerContext.class);
-
+        this.stateHandler = new StateHandler(map);
+        this.controller = new FrontController(stateHandler);
+        this.mockCtx = mock(ChannelHandlerContext.class);
 
         Room room = new Room(0L);
-        room.setAllowedDirections(new HashMap<>());
         room.addRoomDirection(Movement.NORTH,10L);
-
         Room room10 = new Room(10L);
-        room10.setAllowedDirections(new HashMap<>());
         room10.addRoomDirection(Movement.SOUTH,0L);
 
         this.stateHandler.saveEntityState(room).blockingGet();
@@ -105,12 +98,11 @@ public class FrontControllerTest {
     @Test
     public void handleUserMove(){
         System.out.println(joe);
-        this.controller.singleMoveUser(this.joe, MovementDirection.of("N"))
+        this.controller.singleMoveUser(this.joe, Movement.of("N"))
                 .test()
                 .assertComplete()
                 .assertNoErrors()
                 .assertValue(actionResult -> actionResult.getStatus() == true);
-
 
         this.stateHandler.getAllEntitiesByRoom(10).subscribe(System.out::println);
     }

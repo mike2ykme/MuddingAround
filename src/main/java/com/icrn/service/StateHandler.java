@@ -73,8 +73,9 @@ public class StateHandler {
 //
 //            observableEmitter.onComplete();
 //        });
-        return this.getAllEntities()
-                .filter(Entity::isOnline);
+//        return this.getAllEntities()
+//                .filter(Entity::isOnline);
+        return null;
     }
 
     public Single<Entity> saveEntityState(Entity entity){
@@ -109,15 +110,16 @@ public class StateHandler {
     }
 
     public Observable<Entity> getAllEntitiesByRoom(long roomId) {
-        return Observable.create(observableEmitter -> {
-            this.entities.entrySet()
-                    .stream()
-                    .map(Map.Entry::getValue)
-                    .filter(entity -> entity.getRoomLocation() == roomId)
-                    .forEach(observableEmitter::onNext);
-
-            observableEmitter.onComplete();
-        });
+//        return Observable.create(observableEmitter -> {
+//            this.entities.entrySet()
+//                    .stream()
+//                    .map(Map.Entry::getValue)
+//                    .filter(entity -> entity.getRoomLocation() == roomId)
+//                    .forEach(observableEmitter::onNext);
+//
+//            observableEmitter.onComplete();
+//        });
+        return null;
     }
 
     public Observable<Room> getAllRooms(){

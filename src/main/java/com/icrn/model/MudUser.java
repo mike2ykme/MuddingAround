@@ -1,5 +1,6 @@
 package com.icrn.model;
 
+import com.icrn.exceptions.TO;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
@@ -73,8 +74,9 @@ public class MudUser implements Entity {
     public int attack(Entity entity) {
 //        TO.DO();
 //        TODO
-        entity.setHP(entity.getHP()-this.getSTR());
-        entity.setLastAttackedById(this.getId());
+//        entity.setHP(entity.getHP()-this.getSTR());
+//        entity.setLastAttackedById(this.getId());
+        TO.DO();
         return this.getSTR();
     }
 }

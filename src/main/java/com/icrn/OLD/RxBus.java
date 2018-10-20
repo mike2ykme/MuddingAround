@@ -1,5 +1,6 @@
-package com.icrn.model;
+package com.icrn.OLD;
 
+import com.icrn.model.Message;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;

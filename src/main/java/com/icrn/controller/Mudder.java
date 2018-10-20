@@ -42,7 +42,7 @@ public class Mudder {
                 stateHandler.getRoomById(user.getRoomLocation()) // if we can find the room ID
                         .subscribe(room -> { // We should always have a room since the user can't exist 'nowhere'
                             String direction = cmd.getTarget().get();  // Where are we going
-                            Movement movement = MovementDirection.of(direction);    //Wherre we're going in movment form
+                            Movement movement = Movement.of(direction);    //Wherre we're going in movment form
                             if (room.allowsMovement(movement)){ // If we can go there
                                 user.setRoomLocation(room.getRoomIdFromDirection(movement));
                                 user.performAction();
@@ -64,36 +64,37 @@ public class Mudder {
 
     private Single<MudResult> handleAttack(MudUser user, MudCommand cmd){
         log.debug("HandleAttack() called. user:\n" + user.toString() +"\nCMD:\n"+cmd.toString());
-        return Single.create(singleEmitter -> {
-           user.performAction();
-           log.info(user.getName() + " has had performAction() called");
-           cmd.getTarget().ifPresent(otherUserName->{
-               this.stateHandler.getEntityByName(otherUserName)
-                       .subscribe(entity -> {
-                           if (entity.getRoomLocation() == user.getRoomLocation()) {
-                               log.info("other user existed and they were in the same room");
-                               try {
-                                   int dmg = user.attack(entity);
-                                   this.stateHandler.saveEntityState(entity).blockingGet();
-
-                                   singleEmitter.onSuccess(MudResult
-                                           .noActionSuccess("You did "+ dmg + " damage"));
-
-                               } catch (Exception e) {
-                                   singleEmitter.onError(e);
-                               }
-                           } else {
-                               log.info("other user was not in the same room. Other user: " + entity.getName());
-                               singleEmitter.onSuccess(MudResult
-                                       .noActionFailure("You're not in the same room as " + entity.getName()));
-
-                           }
-                       },singleEmitter::onError);
-
-           });
-
-           this.stateHandler.saveEntityState(user);
-        });
+//        return Single.create(singleEmitter -> {
+//           user.performAction();
+//           log.info(user.getName() + " has had performAction() called");
+//           cmd.getTarget().ifPresent(otherUserName->{
+//               this.stateHandler.getEntityByName(otherUserName)
+//                       .subscribe(entity -> {
+//                           if (entity.getRoomLocation() == user.getRoomLocation()) {
+//                               log.info("other user existed and they were in the same room");
+//                               try {
+//                                   int dmg = user.attack(entity);
+//                                   this.stateHandler.saveEntityState(entity).blockingGet();
+//
+//                                   singleEmitter.onSuccess(MudResult
+//                                           .noActionSuccess("You did "+ dmg + " damage"));
+//
+//                               } catch (Exception e) {
+//                                   singleEmitter.onError(e);
+//                               }
+//                           } else {
+//                               log.info("other user was not in the same room. Other user: " + entity.getName());
+//                               singleEmitter.onSuccess(MudResult
+//                                       .noActionFailure("You're not in the same room as " + entity.getName()));
+//
+//                           }
+//                       },singleEmitter::onError);
+//
+//           });
+//
+//           this.stateHandler.saveEntityState(user);
+//        });
+        return null;
     }
 
     private Single<MudResult> handleWait(MudUser user, MudCommand cmd){

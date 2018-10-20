@@ -42,37 +42,37 @@ public class StateHandlerTest {
                 .assertNoValues()
                 .assertComplete();
     }
-    @Test
-    public void updateAndVerifyOnline(){
-        MudUser mudUser = MudUser.makeJoe();
-        mudUser.setOnline(false);
-        stateHandler.saveEntityState(mudUser)
-            .test()
-        .assertNoErrors()
-        .assertComplete();
-
-        stateHandler.getAllOnlineEntities()
-                .test()
-                .assertComplete()
-                .assertNoValues()
-                .assertNoErrors();
-
-        stateHandler.updateEntityState(mudUser.getId(), entity ->{
-                    entity.setOnline(true);
-                    return entity;
-                })
-                .test()
-                .assertNoErrors()
-                .assertComplete();
-
-        stateHandler.getAllOnlineEntities()
-                .test()
-                .assertComplete()
-                .assertNoErrors()
-                .assertValue(entity -> entity.isOnline() == true);
-
-        this.map.forEach((aLong, entity) -> System.out.println("ID: " + aLong));
-    }
+//    @Test
+//    public void updateAndVerifyOnline(){
+//        MudUser mudUser = MudUser.makeJoe();
+//        mudUser.setOnline(false);
+//        stateHandler.saveEntityState(mudUser)
+//            .test()
+//        .assertNoErrors()
+//        .assertComplete();
+//
+//        stateHandler.getAllOnlineEntities()
+//                .test()
+//                .assertComplete()
+//                .assertNoValues()
+//                .assertNoErrors();
+//
+//        stateHandler.updateEntityState(mudUser.getId(), entity ->{
+//                    entity.setOnline(true);
+//                    return entity;
+//                })
+//                .test()
+//                .assertNoErrors()
+//                .assertComplete();
+//
+//        stateHandler.getAllOnlineEntities()
+//                .test()
+//                .assertComplete()
+//                .assertNoErrors()
+//                .assertValue(entity -> entity.isOnline() == true);
+//
+//        this.map.forEach((aLong, entity) -> System.out.println("ID: " + aLong));
+//    }
 
     @Test
     public void verifyGetFullNameFirstBySearches(){
