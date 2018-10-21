@@ -1,7 +1,6 @@
-package com.icrn.model;
+package com.icrn.OLD;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
 import lombok.ToString;
 

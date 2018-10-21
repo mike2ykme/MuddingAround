@@ -1,6 +1,7 @@
 package com.icrn.service;
 
 import com.icrn.dao.EntityDao;
+import com.icrn.exceptions.CannotFindUser;
 import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.Entity;
 import com.icrn.model.EntityType;
@@ -81,7 +82,6 @@ public class StateHandler {
     public Single<Entity> saveEntityState(Entity entity){
         return Single.create(singleEmitter -> {
             entities.put(entity.getId(),entity);
-
             singleEmitter.onSuccess(entity);
         });
     }
@@ -167,31 +167,28 @@ public class StateHandler {
     public Maybe<Entity> getEntityByName(String name) {
         return Maybe.create(maybeEmitter -> {
 
-            Optional<Entity> optionalS = this.entities.entrySet()
+            Optional<Entity> entityByName = this.entities.entrySet()
                     .stream()
                     .map(Map.Entry::getValue)
-                    .filter(entity -> {
-//                        System.out.println(entity);
-                        return entity.getName().equalsIgnoreCase(name);
-                    })
+                    .filter(entity -> entity.getName().equalsIgnoreCase(name))
                     .findFirst();
 
-            if (optionalS.isPresent()){
-                log.debug("Found entity by FULL match: " + optionalS.get().toString());
-                optionalS.ifPresent(entity -> maybeEmitter.onSuccess(entity));
+            if (entityByName.isPresent()){
+                log.debug("Found entity by FULL match: " + entityByName.get().toString());
+                entityByName.ifPresent(entity -> maybeEmitter.onSuccess(entity));
             }else {
-                optionalS = this.entities.entrySet()
+                entityByName = this.entities.entrySet()
                         .stream()
                         .map(Map.Entry::getValue)
                         .filter(entity -> entity.getName().toUpperCase().contains(name.toUpperCase()))
                         .findFirst();
-                optionalS.ifPresent(entity -> {
+                entityByName.ifPresent(entity -> {
                     log.debug("Found entity by PARTIAL match: " + entity.toString());
                     maybeEmitter.onSuccess(entity);
                 });
             }
 
-            if (!optionalS.isPresent()){
+            if (!entityByName.isPresent()){
                 log.info("Unable to find entity");
                 maybeEmitter.onComplete();
             }
@@ -203,12 +200,12 @@ public class StateHandler {
     public Single<Boolean> sendUserMessage(MudUser user, String msg) {
         return Single.create(singleEmitter -> {
             val ctx = this.communicationMap.get(user.getId());
-           if (ctx != null){
-               ctx.writeAndFlush(msg);
-           }else {
-               log.info("No communication channel for userName: " + user.getName() + " id:" + user.getId());
-               singleEmitter.onError(new RuntimeException("Unable to find user in communication map. User might have disconnected"));
-           }
+            if (ctx != null){
+                ctx.writeAndFlush(msg);
+            }else {
+                log.info("No communication channel for userName: " + user.getName() + " id:" + user.getId());
+                singleEmitter.onError(new RuntimeException("Unable to find user in communication map. User might have disconnected"));
+            }
         });
     }
 
@@ -232,7 +229,6 @@ public class StateHandler {
 
                }else {
                    completableEmitter.onError(new RuntimeException("Unable to find a user to put online"));
-
                }
             }
         });
@@ -249,9 +245,7 @@ public class StateHandler {
                         .subscribe(ignore ->{
                             if (possibleUserKey == null){
                                 log.info("I have tried to remove a user comm function when none existed. Should not disconnect logged out users again");
-//                                completableEmitter.onError(new NoUserToDisconnect());
                                 completableEmitter.onError(NoUserToDisconnect.foundNone());
-
                             }else {
                                 completableEmitter.onComplete();
                             }
@@ -266,6 +260,8 @@ public class StateHandler {
         return Single.create(singleEmitter -> {
            if (this.entities.containsKey(id)){
                singleEmitter.onSuccess(this.entities.get(id));
+           }else {
+               singleEmitter.onError(CannotFindUser.foundNone());
            }
         });
 

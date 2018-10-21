@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.util.HashMap;
 
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
 public class FrontControllerTest {
@@ -48,7 +49,6 @@ public class FrontControllerTest {
                 .assertComplete()
                 .assertNoErrors()
                 .assertValue(mudUser -> {
-                    System.out.println(mudUser);
                     return mudUser.getName().equalsIgnoreCase("joe");
                 });
     }
@@ -71,16 +71,18 @@ public class FrontControllerTest {
         this.controller.registerUserOnline(MudUser.makeJoe(),ctx)
                 .test()
                 .assertComplete()
-                .assertNoErrors();
+                .assertNoErrors()
+                .assertValue(actionResult -> actionResult.getStatus());
     }
 
     @Test
-    public void registerOfflineUserOffline(){ //We can't make someone offline offline so we just return a NoUserToDisconnect exception as a message saying we did it but
+    public void registerOfflineUserOffline(){
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
-
+        // We shouldn't be disconnecting a user that has is not there, so we'll return a status failure for user
         this.controller.registerUserOffline(MudUser.makeJoe())
             .test()
-            .assertError(NoUserToDisconnect.class);
+            .assertComplete()
+            .assertValue(actionResult -> !actionResult.getStatus());
     }
 
     @Test
@@ -97,13 +99,31 @@ public class FrontControllerTest {
 
     @Test
     public void handleUserMove(){
-        System.out.println(joe);
-        this.controller.singleMoveUser(this.joe, Movement.of("N"))
+        assertTrue(joe.getRoomLocation()==0L);
+        this.controller.handleUserMove(this.joe, Movement.of("N"))
                 .test()
                 .assertComplete()
                 .assertNoErrors()
-                .assertValue(actionResult -> actionResult.getStatus() == true);
+                .assertValue(actionResult ->
+                    actionResult.getStatus() && actionResult.getUser().getRoomLocation() == 10
+                );
+    }
 
-        this.stateHandler.getAllEntitiesByRoom(10).subscribe(System.out::println);
+    @Test
+    public void verifyStringToCommandHandler(){
+        val command = "Move S";
+        val room0 = this.stateHandler.getEntityById(0L)
+                .map(entity -> (Room)entity)
+                .blockingGet();
+        room0.addRoom(new Room(20L),Movement.SOUTH).blockingFirst();
+        this.stateHandler.saveEntityState(room0).blockingGet();
+
+        this.controller.handleCommands(command,joe.getId())
+                .test()
+                .assertNoErrors()
+                .assertComplete()
+                .assertValue(actionResult ->
+                   actionResult.getStatus() && actionResult.getUser().getRoomLocation() == 20L
+                );
     }
 }

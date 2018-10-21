@@ -33,7 +33,6 @@ public class Room implements Entity {
         return EntityType.ROOM;
     }
 
-
     public boolean allowsMovement(Movement movement) {
         return this.allowedDirections.containsKey(movement);
     }
@@ -45,7 +44,7 @@ public class Room implements Entity {
         return this.allowedDirections.get(movement);
     }
 
-    public Observable<Map.Entry<Movement,Long>> AddRoom(Room otherRoom, Movement direction) {
+    public Observable<Map.Entry<Movement,Long>> addRoom(Room otherRoom, Movement direction) {
         return Observable.create(observableEmitter -> {
             this.getAllowedDirections().put(direction,otherRoom.getId());
             otherRoom.getAllowedDirections().put(Movement.reverse(direction),this.getId());

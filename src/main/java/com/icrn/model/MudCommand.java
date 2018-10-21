@@ -39,4 +39,14 @@ public class MudCommand {
             return MudCommand.of(Actions.BADCOMMAND,null,null);
         }
     }
+
+//    public static MudCommand parseNoUser(String request) {
+//        List<String> cmds = Arrays.asList(request.split("\\s+"));
+//
+//        try {
+//            return MudCommand.of(Actions.valueOf(cmds.get(0).toUpperCase()),cmds.get(1),null);
+//        } catch (IllegalArgumentException e) {
+//            return MudCommand.of(Actions.BADCOMMAND,null,null);
+//        }
+//    }
 }

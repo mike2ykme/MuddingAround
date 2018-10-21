@@ -11,7 +11,7 @@ public class RoomTest {
         Room roomA = new Room(0L);
         Room roomB = new Room(10L);
 
-        roomA.AddRoom(roomB,Movement.of("N"))
+        roomA.addRoom(roomB,Movement.of("N"))
                 .test()
                 .assertValueCount(1)
                 .assertValue(movementLongEntry -> movementLongEntry.getKey() == Movement.NORTH)
