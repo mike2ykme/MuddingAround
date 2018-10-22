@@ -14,7 +14,6 @@ public class TelnetClient {
 
     static final int PORT = 8080;
     static final String HOST = "localhost";
-
     public static void main(String... args) throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();
 

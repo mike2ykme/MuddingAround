@@ -7,7 +7,7 @@ public interface Entity {
 //    boolean isOnline();
 //    void setOnline(boolean b);
     Long getId();
-//    long getRoomLocation();
+    long getRoomLocation();
 //    void setRoomLocation(long l);
     String getName();
     void setName(String name);

@@ -1,8 +1,9 @@
 package com.icrn;
 
-import com.icrn.controller.Mudder;
+import com.icrn.controller.FrontController;
 import com.icrn.io.TelnetServer;
 import com.icrn.model.MudUser;
+import com.icrn.model.Room;
 import com.icrn.model.WorkQueue;
 import com.icrn.service.StateHandler;
 import io.netty.channel.Channel;
@@ -22,10 +23,21 @@ public class App
     public static void main( String[] args ) throws Exception
     {
         val stater = new StateHandler(new HashMap<>());
-        stater.saveEntityState(MudUser.makeJoe()).subscribe((entity, throwable) -> {});
-        val mudder = new Mudder(stater);
+        System.out.println(
+                stater.saveEntityState(new Room(0L)).blockingGet());
+        val joe = MudUser.makeJoe();
+        joe.setOnline(false);
+        stater.saveEntityState(joe).subscribe((entity, throwable) -> {System.out.println(entity);});
+        val mike = MudUser.makeJoe();
+        mike.setName("mike");
+        mike.setId(2L);
+        mike.setPassword("MIKE");
+        mike.setOnline(false);
+        System.out.println(
+                stater.saveEntityState(mike).blockingGet());
 
-        TelnetServer server = new TelnetServer(executor,1,1,8080,mudder);
+        val controller = new FrontController(stater);
+        TelnetServer server = new TelnetServer(executor,1,1,8080,controller);
         Channel channel = server.startNetworking().blockingGet();
         log.info("Server has been started");
         System.out.println("STARTED");

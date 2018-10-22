@@ -19,11 +19,14 @@ public class Room implements Entity {
 
     public String getName(){
         if (this.name == null)
-            return id.toString();
+            return "ROOM ID:" + id.toString();
         else
             return this.name;
     }
 
+    public long getRoomLocation(){
+        return this.id;
+    }
     public void setName(String name){ this.name = name; }
 
     public Room(Long id){ this.id = id; }

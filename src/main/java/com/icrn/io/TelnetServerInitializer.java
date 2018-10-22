@@ -1,6 +1,6 @@
 package com.icrn.io;
 
-import com.icrn.controller.Mudder;
+import com.icrn.controller.FrontController;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
@@ -15,10 +15,10 @@ import io.netty.handler.codec.string.StringEncoder;
 public class TelnetServerInitializer extends ChannelInitializer<SocketChannel> {
     private static final StringDecoder DECODER = new StringDecoder();
     private static final StringEncoder ENCODER = new StringEncoder();
-    private final Mudder mudder;
+    private final FrontController controller;
 
-    public TelnetServerInitializer(Mudder mudder) {
-        this.mudder = mudder;
+    public TelnetServerInitializer(FrontController controller) {
+        this.controller = controller;
     }
 
     @Override
@@ -28,6 +28,6 @@ public class TelnetServerInitializer extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(DECODER);
         pipeline.addLast(ENCODER);
 
-        pipeline.addLast("login",new TelnetServerLoginHandler(this.mudder));
+        pipeline.addLast("login",new TelnetServerLoginHandler(this.controller));
     }
 }

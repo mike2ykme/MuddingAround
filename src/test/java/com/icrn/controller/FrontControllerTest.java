@@ -3,7 +3,10 @@ package com.icrn.controller;
 import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
+import io.netty.channel.embedded.EmbeddedChannel;
+import io.reactivex.Maybe;
+import io.reactivex.schedulers.Schedulers;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
@@ -11,7 +14,8 @@ import org.junit.Test;
 import java.util.HashMap;
 
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.*;
 
 public class FrontControllerTest {
     MudUser joe;
@@ -30,14 +34,34 @@ public class FrontControllerTest {
         this.mockCtx = mock(ChannelHandlerContext.class);
 
         Room room = new Room(0L);
-        room.addRoomDirection(Movement.NORTH,10L);
         Room room10 = new Room(10L);
+        Room room20 = new Room(20L);
         room10.addRoomDirection(Movement.SOUTH,0L);
+        room.addRoomDirection(Movement.NORTH,10L);
+        room.addRoomDirection(Movement.SOUTH,20L);
+        room20.addRoomDirection(Movement.NORTH,0L);
+
+
 
         this.stateHandler.saveEntityState(room).blockingGet();
         this.stateHandler.saveEntityState(room10).blockingGet();
     }
 
+    @Test
+    public void handleNoUsersAvailableForLogin(){
+        val statehandler = new StateHandler(new HashMap<>());
+        val controller = new FrontController(statehandler);
+        val mockCtx = mock(ChannelHandlerContext.class);
+
+        val username = "joe";
+        val password  = "JOE";
+
+        controller.maybeGetUser(username,password)
+                .test()
+                .assertComplete()
+                .assertNoErrors()
+                .assertNoValues();
+    }
 
     @Test
     public void handleCorrectLogin(){
@@ -112,11 +136,7 @@ public class FrontControllerTest {
     @Test
     public void verifyStringToCommandHandler(){
         val command = "Move S";
-        val room0 = this.stateHandler.getEntityById(0L)
-                .map(entity -> (Room)entity)
-                .blockingGet();
-        room0.addRoom(new Room(20L),Movement.SOUTH).blockingFirst();
-        this.stateHandler.saveEntityState(room0).blockingGet();
+
 
         this.controller.handleCommands(command,joe.getId())
                 .test()
@@ -125,5 +145,63 @@ public class FrontControllerTest {
                 .assertValue(actionResult ->
                    actionResult.getStatus() && actionResult.getUser().getRoomLocation() == 20L
                 );
+    }
+
+    @Test
+    public void verifyStringToCommandHandlerFailure(){
+        val command = "Move S";
+
+
+        val joe = MudUser.makeJoe();
+        HashMap<Long, Entity> map = new HashMap<>();
+        map.put(joe.getId(),joe);
+        StateHandler stater = new StateHandler(map);
+        FrontController controller = new FrontController(stater);
+
+        controller.handleCommands(command,joe.getId())
+                .test()
+                .assertNoErrors()
+                .assertComplete()
+                .assertValue(actionResult ->{
+                    System.out.println(actionResult);
+                        return !actionResult.getStatus();}
+                );
+    }
+
+//    @Test
+//    public void verifyTalkStringToCommandHandler(){
+//        val command = "Talk hello world";
+//
+//        ChannelFuture mockChFut = mock(ChannelFuture.class);
+//        when(mockChFut.isSuccess()).thenReturn(true);
+//        when(mockChFut.addListener(any(ChannelFutureListener.class))).thenReturn(mockChFut);
+//        when(this.mockCtx.writeAndFlush(any(String.class))).thenReturn(mockChFut);
+//        when(this.mockCtx.write(any(String.class))).thenReturn(mockChFut);
+//
+//        this.stateHandler.getCommunicationMap().put(joe.getId(),mockCtx);
+//
+//
+//        this.controller.handleCommands(command,joe.getId())
+//                .test()
+//                .assertNoErrors()
+//                .assertComplete();
+////                .assertValue(actionResult -> actionResult.getMessage().toLowerCase().contains("hello world"));
+//
+//    }
+
+
+    @Test
+    public void howDoesMaybeWork(){
+//        val test = Maybe.just("A");
+        val test = Maybe.create(maybeEmitter -> {
+           maybeEmitter.onSuccess("B");
+           maybeEmitter.onComplete();
+        });
+
+        test
+                .subscribe(s -> System.out.println("osSuccess()")
+                ,Throwable::printStackTrace
+                ,() -> System.out.println("onComplete()")
+            );
     }
 }

@@ -3,11 +3,14 @@ package com.icrn.model;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Data
 @AllArgsConstructor
 public class MudCommand {
@@ -31,22 +34,41 @@ public class MudCommand {
     }
 
     public static MudCommand parse(String request, MudUser mudUser) {
+        if (mudUser == null || request == null)
+            throw new IllegalArgumentException("arguments are null");
+
         List<String> cmds = Arrays.asList(request.split("\\s+"));
 
         try {
-            return MudCommand.of(Actions.valueOf(cmds.get(0).toUpperCase()),cmds.get(1),mudUser);
+            val action = Actions.valueOf(cmds.get(0).toUpperCase());
+            log.info("found action: " + action.toString());
+
+            if (action == Actions.TALK){
+                System.out.println("MATCHES MOVE");
+                StringBuilder builder = new StringBuilder();
+
+                for (int i =1; i <cmds.size(); i++){
+                    builder.append(cmds.get(i) + " ");
+
+                }
+                return MudCommand.of(Actions.TALK,builder.toString().trim(),mudUser);
+
+            }else {
+                val size = cmds.size();
+                log.debug("size of cmds: " + size);
+                if (size >1){
+                    return MudCommand.of(action,cmds.get(1),mudUser);
+                }else {
+                    return MudCommand.of(Actions.BADCOMMAND,null,mudUser);
+                }
+
+            }
+
         } catch (IllegalArgumentException e) {
-            return MudCommand.of(Actions.BADCOMMAND,null,null);
+            log.error(e.getMessage());
+            System.out.println("Caught an illegal argument exception with MudCommand parse(), defaulting to Actions.TALK");
+            return MudCommand.of(Actions.TALK,request,mudUser);
+
         }
     }
-
-//    public static MudCommand parseNoUser(String request) {
-//        List<String> cmds = Arrays.asList(request.split("\\s+"));
-//
-//        try {
-//            return MudCommand.of(Actions.valueOf(cmds.get(0).toUpperCase()),cmds.get(1),null);
-//        } catch (IllegalArgumentException e) {
-//            return MudCommand.of(Actions.BADCOMMAND,null,null);
-//        }
-//    }
 }

@@ -1,10 +1,7 @@
 package com.icrn.model;
 
 import com.icrn.exceptions.TO;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.ToString;
+import lombok.*;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -38,8 +35,9 @@ public class MudUser implements Entity {
     }
 
     public LocalDateTime performAction(){
+        val oldTime = this.lastActionPerformedTime;
         this.lastActionPerformedTime = LocalDateTime.now();
-        return lastActionPerformedTime;
+        return oldTime;
     }
     public boolean canPerformAction() {
         if (lastActionPerformedTime

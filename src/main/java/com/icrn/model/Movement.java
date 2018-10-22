@@ -1,7 +1,7 @@
 package com.icrn.model;
 
 public enum Movement {
-    NORTH,EAST,WEST,SOUTH,UP,DOWN;
+    NORTH,EAST,WEST,SOUTH,UP,DOWN,BAD_DIRECTION;
 
     public static Movement of(String direction) {
         switch (direction.toUpperCase().charAt(0)){
@@ -24,7 +24,7 @@ public enum Movement {
                 return Movement.DOWN;
 
             default:
-                throw new RuntimeException("Unable to parse direction");
+                return Movement.BAD_DIRECTION;
         }
     }
 
@@ -43,7 +43,7 @@ public enum Movement {
             case DOWN:
                 return Movement.UP;
             default:
-                throw new RuntimeException("Unable to parse direction");
+                return Movement.BAD_DIRECTION;
         }
     }
 }

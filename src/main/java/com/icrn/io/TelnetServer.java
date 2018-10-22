@@ -1,13 +1,11 @@
 package com.icrn.io;
 
-import com.icrn.controller.Mudder;
+import com.icrn.controller.FrontController;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
 import io.reactivex.Single;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -22,17 +20,17 @@ public class TelnetServer {
     private final int numThreadsBoss;
     private final int numThreadsWorker;
     private final int PORT;
-    private final Mudder mudder;
+    private final FrontController controller;
     private EventLoopGroup bossGroup;
     private EventLoopGroup workerGroup;
 //    static private final Subject<Message> MSG_BUS = PublishSubject.create();
 
-    public TelnetServer(ExecutorService executor, int numThreadsBoss, int numThreadsWorker,int PORT,Mudder mudder){
+    public TelnetServer(ExecutorService executor, int numThreadsBoss, int numThreadsWorker, int PORT, FrontController controller){
         this.executor = executor;
         this.numThreadsBoss = numThreadsBoss;
         this.numThreadsWorker = numThreadsWorker;
         this.PORT = PORT;
-        this.mudder = mudder;
+        this.controller = controller;
     }
 
     public static void main(String... args)throws Exception{
@@ -69,8 +67,8 @@ public class TelnetServer {
                 ServerBootstrap bootstrap = new ServerBootstrap();
                 bootstrap.group(bossGroup,workerGroup)
                         .channel(NioServerSocketChannel.class)
-                        .handler(new LoggingHandler(LogLevel.DEBUG))
-                        .childHandler(new TelnetServerInitializer(this.mudder));
+//                        .handler(new LoggingHandler(LogLevel.DEBUG))
+                        .childHandler(new TelnetServerInitializer(this.controller));
                 final Channel channel = bootstrap.bind(PORT).sync().channel();
 
             singleEmitter.onSuccess(channel);

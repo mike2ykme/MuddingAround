@@ -1,6 +1,6 @@
 package com.icrn.io;
 
-import com.icrn.controller.Mudder;
+import com.icrn.controller.FrontController;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -13,14 +13,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String> {
+    private String SHUTDOWN_CLIENT_SIGNAL = "SHUTDOWN_CLIENT_SIGNAL\r\n";
     private String username = null;
     private String password = null; // DON'T DO THIS IN ANYTHING REAL BECAUSE OF HOW Java Stores Strings. You could see the PW if everything crashes or if someone is examining a crash dump
     private boolean close = false;
     private AtomicInteger loginCount = new AtomicInteger(0);
-    private final Mudder mudder;
-
-    public TelnetServerLoginHandler(Mudder mudder) {
-        this.mudder = mudder;
+    private final FrontController controller;
+    public TelnetServerLoginHandler(FrontController controller) {
+        this.controller = controller;
     }
 
     @Override
@@ -62,39 +62,41 @@ public class TelnetServerLoginHandler extends SimpleChannelInboundHandler<String
                 this.password = input;
             }
         }
-
         if (this.username != null && this.password != null){
             log.info("trying to get user: " + this.username + " from login handler");
-            this.mudder.maybeGetUser(this.username,this.password)
-                    .subscribe(mudUser -> {
-                        System.out.println(mudUser.toString());
-//                                this.mudder.maybeRegisterUser(mudUser,ctx)
-//                                        .subscribe(() -> {
-//                                            ctx.pipeline().addLast(new TelnetServerHandler(mudUser));
-//                                            ctx.pipeline().remove(TelnetServerLoginHandler.class);
-//
-//                                            ctx.fireChannelActive();
-//
-//                                        },throwable ->{
-//                                            System.out.println(throwable);
-//                                            log.info("Unable to register a user as online");
-//                                            throw new RuntimeException(throwable);
-//                                        });
-                            },
-                            throwable -> {
-                                log.info(throwable.toString());
-                                int loginNum = this.loginCount.incrementAndGet();
-                                if (loginNum >2) {
-                                    ctx.channel().close();
-                                    log.info("Unable to login for: " + this.username);
-                                    throw new RuntimeException("Unable to login for user");
-                                }else {
-                                    this.username = null;
-                                    this.password = null;
-                                    ChannelFuture channelFuture = ctx.writeAndFlush("\r\nInvalid password and or username.\r\n\r\nPlease type in your username or 'bye' to quit.\r\n");
-                                    channelFuture.sync();
-                                }
-                            });
+
+            this.controller.maybeGetUser(this.username, this.password)
+                    .subscribe(user -> {
+                        this.controller.registerUserOnline(user,ctx)
+                                .subscribe(actionResult -> {
+                                    ctx.pipeline().addLast(new TelnetServerHandler(user, controller));
+                                    ctx.pipeline().remove(TelnetServerLoginHandler.class);
+                                    ctx.fireChannelActive();
+
+                                },throwable -> {
+                                    log.info("Unable to register user online");
+                                });
+
+                    },throwable -> {
+                        log.info("There was an exception when trying to get the user");
+                    },() ->{
+                        log.info("Unable to find a user with this username & password combo. Username: "+this.username);
+                        System.out.println("unable to find a username & password combo");
+                        this.loginCount.incrementAndGet();
+                        this.username = null;
+                        this.password = null;
+                        ChannelFuture channelFuture =
+                            ctx.writeAndFlush("\r\nInvalid password and or username." +
+                                    "\r\n\r\nPlease type in your username or 'bye' to quit.\r\n");
+                        channelFuture.sync();
+                        System.out.println("Can't find anyone!!");
+                    });
+            if (this.loginCount.get() >2){
+                System.out.println("NUMBER GREATER THAN 2");
+                ChannelFuture channelFuture = ctx.writeAndFlush(SHUTDOWN_CLIENT_SIGNAL);
+                channelFuture.sync();
+//                ctx.channel().close().sync();
+            }
         }else {
             ChannelFuture future = ctx.write(response);
             System.out.println("\t\tIN Server Handler");

@@ -2,11 +2,14 @@ package com.icrn.service;
 
 import com.icrn.dao.EntityDao;
 import com.icrn.exceptions.CannotFindUser;
+import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.Entity;
 import com.icrn.model.EntityType;
 import com.icrn.model.MudUser;
 import com.icrn.model.Room;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
@@ -29,6 +32,7 @@ import java.util.function.Function;
 public class StateHandler {
     @NonNull Map<Long,Entity> entities;
     private final HashMap<Long,ChannelHandlerContext> communicationMap = new HashMap<>();
+    static final String RETURN_CHARS = "\r\n";
     EntityDao entityDao = null;
 
     public StateHandler(Map<Long,Entity> entities){
@@ -80,6 +84,7 @@ public class StateHandler {
     }
 
     public Single<Entity> saveEntityState(Entity entity){
+        log.info("saving Entity state for " + entity.getName());
         return Single.create(singleEmitter -> {
             entities.put(entity.getId(),entity);
             singleEmitter.onSuccess(entity);
@@ -91,6 +96,7 @@ public class StateHandler {
             for (Entity e: entities){
                 if (observableEmitter.isDisposed())
                     return;
+                log.info("saving Entity state for " + e.getName());
                 this.entities.put(e.getId(),e);
                 observableEmitter.onNext(e);
             }
@@ -110,16 +116,15 @@ public class StateHandler {
     }
 
     public Observable<Entity> getAllEntitiesByRoom(long roomId) {
-//        return Observable.create(observableEmitter -> {
-//            this.entities.entrySet()
-//                    .stream()
-//                    .map(Map.Entry::getValue)
-//                    .filter(entity -> entity.getRoomLocation() == roomId)
-//                    .forEach(observableEmitter::onNext);
-//
-//            observableEmitter.onComplete();
-//        });
-        return null;
+        return Observable.create(observableEmitter -> {
+            this.entities.entrySet().stream()
+                    .map(longEntityEntry -> longEntityEntry.getValue())
+                    .filter(entity -> entity.getRoomLocation() == roomId)
+                    .peek(entity -> log.info("Found entity: " + entity.getName() + " in roomId: " + roomId))
+                    .forEach(observableEmitter::onNext);
+
+            observableEmitter.onComplete();
+        });
     }
 
     public Observable<Room> getAllRooms(){
@@ -174,7 +179,7 @@ public class StateHandler {
                     .findFirst();
 
             if (entityByName.isPresent()){
-                log.debug("Found entity by FULL match: " + entityByName.get().toString());
+                log.debug("Found entity by FULL match: \n" + entityByName.get().toString());
                 entityByName.ifPresent(entity -> maybeEmitter.onSuccess(entity));
             }else {
                 entityByName = this.entities.entrySet()
@@ -194,32 +199,71 @@ public class StateHandler {
             }
 
         });
-
     }
 
-    public Single<Boolean> sendUserMessage(MudUser user, String msg) {
-        return Single.create(singleEmitter -> {
+    public Completable sendUserMessage(MudUser user, String msg) {
+        log.info("Trying to send user message: " + user.getName());
+        return Completable.create(completableEmitter -> {
             val ctx = this.communicationMap.get(user.getId());
             if (ctx != null){
-                ctx.writeAndFlush(msg);
+                log.debug("Found context for user " + user.getName());
+                val chFut = ctx.writeAndFlush(msg + RETURN_CHARS);
+                chFut.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(ChannelFuture channelFuture) throws Exception {
+                        log.info("inside operationComplete()");
+                        if (chFut.isSuccess()){
+                            log.info("Was able to send " + user.getName() + " a message: " + msg);
+                            completableEmitter.onComplete();
+                        } else {
+                            log.error("Unable to send " + user.getName() + " a message: " + msg);
+                            completableEmitter.onError(CannotPerformAction.of("Cannot write data to user"));
+                        }
+                    }
+                });
+
             }else {
-                log.info("No communication channel for userName: " + user.getName() + " id:" + user.getId());
-                singleEmitter.onError(new RuntimeException("Unable to find user in communication map. User might have disconnected"));
+                log.error("No communication channel for userName: " + user.getName() + " id:" + user.getId());
+                completableEmitter.onError(CannotFindUser.foundNone());
             }
         });
     }
 
+    public Completable sendUserMessage(Long userId, String msg){
+        val mudUser = (MudUser)this.entities.get(userId);
+        return sendUserMessage(mudUser,msg);
+
+    }
     public Completable registerUserOnline(MudUser mudUser, ChannelHandlerContext ctx){
+        log.debug("Trying to register user online");
+        if (mudUser.isOnline()){
+            log.warn("User is showing as online already" + mudUser.getName());
+        }
         return Completable.create(completableEmitter -> {
             if (!completableEmitter.isDisposed()){
-                val possibleUserKey = this.communicationMap.put(mudUser.getId(),ctx);
-
-                if (possibleUserKey != null)
+                val possibleUserContext = this.communicationMap.put(mudUser.getId(),ctx);
+                if (possibleUserContext != null){
                     log.info("User might have disconnected as I'm getting a login for the same user: " + mudUser.getName());
+                    try {
+                        possibleUserContext.writeAndFlush("CLOSING CONNECTION AS NEW CONNECTION FOR THIS USER DETECTED\r\n");
+                    } catch (Exception e) {
+                        log.info("ERROR trying to write message to duplicate connection");
+                        log.info(e.getMessage());
+                        e.printStackTrace();
+                    }
+                    try {
+                        possibleUserContext.channel().close().sync();
+                    } catch (InterruptedException e) {
+                        log.info("ERROR trying to close duplicate connection");
+                        log.info(e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
 
                 MudUser user = (MudUser)this.entities.get(mudUser.getId());
 
                 if ((null != user)){
+                    log.info("User was not null, trying to register ctx of user");
                    user.setOnline(true);
                    this.saveEntityState(user)
                            .subscribe(ignore ->{
@@ -235,6 +279,10 @@ public class StateHandler {
     }
 
     public Completable registerUserOffline(MudUser mudUser){
+        log.debug("Trying to register user offline");
+        if (!mudUser.isOnline()){
+            log.warn("User is showing as offline already" + mudUser.getName());
+        }
         return Completable.create(completableEmitter -> {
             val possibleUserKey = this.communicationMap.remove(mudUser.getId());
 
@@ -257,8 +305,11 @@ public class StateHandler {
     }
 
     public Single<Entity> getEntityById(long id) {
+        log.info("Trying to find an ENTITY with id: " + id);
+        log.info("Do we have this in the state?: " + this.entities.containsKey(id));
         return Single.create(singleEmitter -> {
            if (this.entities.containsKey(id)){
+               log.info("We've found this userID in the state");
                singleEmitter.onSuccess(this.entities.get(id));
            }else {
                singleEmitter.onError(CannotFindUser.foundNone());

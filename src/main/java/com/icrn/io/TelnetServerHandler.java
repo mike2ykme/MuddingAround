@@ -1,10 +1,11 @@
 package com.icrn.io;
 
+import com.icrn.controller.FrontController;
 import com.icrn.model.*;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.reactivex.schedulers.Schedulers;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetAddress;
@@ -13,9 +14,11 @@ import java.util.Date;
 @Slf4j
 public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
     private final MudUser mudUser;
-
-    public TelnetServerHandler(MudUser mudUser){
+    private final FrontController controller;
+    static final String RETURN_CHARS = "\r\n";
+    public TelnetServerHandler(MudUser mudUser, FrontController controller){
         this.mudUser = mudUser;
+        this.controller = controller;
     }
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
@@ -38,42 +41,32 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         boolean close = false;
         if (request.isEmpty()) {
             response = "Please type something.\r\n";
+            ChannelFuture future = ctx.write(response);
         } else if ("bye".equals(request.toLowerCase())) {
             response = "Have a good day!\r\n";
+            ChannelFuture future = ctx.write(response);
             close = true;
         }
         else if ("shutdown".equalsIgnoreCase(request)){
             response = "Have a good day!\r\n";
             close = true;
+            ChannelFuture future = ctx.write(response);
             log.info("SHUTTING DOWN PARENT");
 //            ctx.channel().parent().close();
         }
         else {
-            response = "Did you say '" + request + "'?\r\n";
+            this.controller.handleCommands(request,this.mudUser.getId())
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(actionResult -> {
+                        ctx.writeAndFlush(actionResult.getMessage() + RETURN_CHARS);
+
+                    },throwable -> {
+                        ctx.fireExceptionCaught(throwable);
+                    });
         }
-        // We do not need to write a ChannelBuffer here.
-        // We know the encoder inserted at TelnetPipelineFactory will do the conversion.
-        ChannelFuture future = ctx.write(response);
-        System.out.println("IN Server Handler");
+
         System.out.println(Thread.currentThread().toString());
 
-
-
-        //Need to have something that takes all these and then converts them into CMD objects
-
-//        RxBus.send(new Message("ABC","DEF",request));
-//        MudCommand command = MudCommand.parse(request,mudUser);
-//        WorkQueue.getInstance().offerCommand(command).subscribe();
-//        System.out.println("Thread running in the TelnetServerHandler before offering command " +
-//                Thread.currentThread());
-//        WorkQueue.getInstance().offerCommand(MudCommand.of(Actions.TALK,null,this.mudUser))
-//                .subscribe(() -> {
-////                    System.out.println("Thread returning from subscribe success on offering command " + Thread.currentThread());
-////                    log.debug("COMMAND WAS ACCEPTED");
-//
-//                },throwable -> {
-//                    throw new RuntimeException(throwable);
-//                });
 
         // Close the connection after sending 'Have a good day!'
         // if the client has sent 'bye'.
@@ -83,7 +76,7 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
                 log.info("SHUTTING DOWN PARENT");
                 ctx.channel().parent().close();
             }
-            future.addListener(ChannelFutureListener.CLOSE);
+//            future.addListener(ChannelFutureListener.CLOSE);
         }
     }
 
