@@ -53,6 +53,14 @@ public class MudCommand {
                 }
                 return MudCommand.of(Actions.TALK,builder.toString().trim(),mudUser);
 
+            }else if (action == Actions.WHISPER){
+                StringBuilder builder = new StringBuilder();
+
+                for (int i =1; i <cmds.size(); i++){
+                    builder.append(cmds.get(i) + " ");
+
+                }
+                    return MudCommand.of(action,builder.toString().trim(),mudUser);
             }else {
                 val size = cmds.size();
                 log.debug("size of cmds: " + size);

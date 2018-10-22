@@ -12,6 +12,7 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 @Slf4j
@@ -144,8 +145,15 @@ public class FrontController {
                                     this.handleUserTalk(user,parsedCommand.getTarget())
                                             .subscribe(singleEmitter::onSuccess,singleEmitter::onError);
                                     break;
-//                                case WHISPER:
-//                                    break;
+                                case WHISPER:
+                                    log.debug(user.getName() + "sent command WHISPER");
+                                    this.handleUserWhisper(user,parsedCommand.getTarget())
+                                            .subscribe(singleEmitter::onSuccess,throwable ->{
+                                                log.error(throwable.getMessage());
+                                                singleEmitter.onSuccess(ActionResult.failure("Unable to whisper",user));
+                                            });
+
+                                    break;
                                 default:
                                     singleEmitter.onSuccess(
                                             ActionResult.failure("I don't know what you're trying to do", user));
@@ -160,11 +168,61 @@ public class FrontController {
         });
     }
 
+    private Single<ActionResult> handleUserWhisper(MudUser user, Optional<String> message) {
+        log.debug("Inside handleUserWhisper()");
+        if (user == null || message == null)
+            throw new IllegalArgumentException("arguments are null");
+
+        val username = user.getName();
+
+        if (!message.isPresent()){
+            log.info(username + " did not send anything to say");
+            return Single.just(ActionResult.failure("Must have something to say",user));
+
+        }else {
+            val msgContents =  Arrays.asList(message.get().split("\\s+"));
+
+            return Single.create(singleEmitter -> {
+                this.stateHandler.getEntityByName(msgContents.get(0))
+                        .subscribe(entity -> {
+                            if (entity.getType() == EntityType.USER){
+
+                                StringBuilder builder = new StringBuilder();
+                                for (int i =1; i <msgContents.size(); i++){
+                                    builder.append(msgContents.get(i) + " ");
+
+                                }
+                                System.out.println(builder.toString());
+                                this.stateHandler.sendUserMessage((MudUser)entity,username + ": " +builder.toString().trim())
+                                        .subscribe(() ->{
+                                            singleEmitter.onSuccess(ActionResult.success("You were able to whisper to " + entity.getName(),user));
+                                        } ,throwable -> singleEmitter.onError(throwable));
+
+                            }else {
+                                log.warn("We can find an entity by name, but it's not a user so we can't talk to it.");
+                                singleEmitter.onSuccess(
+                                        ActionResult.failure("You can't talk to " + entity.getName(),user));
+
+                            }
+                        },throwable -> {
+                            log.error("Received an error trying to get the Entity by name " + throwable.getMessage());
+//                            singleEmitter.onSuccess(ActionResult.failure("Unable to find the target",user));
+                            singleEmitter.onError(throwable);
+
+                        },() -> {
+                            log.info("We didn't find a user, but it ran to completion");
+                            singleEmitter.onSuccess(ActionResult.failure("Unable to whisper", user));
+
+                        });
+            });
+        }
+    }
+
     private Single<ActionResult> handleUserTalk(MudUser user, Optional<String> message) {
-        log.info("Inside handleUserTalk()");
+        log.debug("Inside handleUserTalk()");
         val username = user.getName();
         if (!message.isPresent()){
-            log.info(username + "did not send anything to say");
+            log.info(username + " did not send anything to say");
             return Single.just(ActionResult.failure("Must have something to say",user));
         }
         else {

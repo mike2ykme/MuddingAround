@@ -56,7 +56,7 @@ public class TelnetServerHandler extends SimpleChannelInboundHandler<String> {
         }
         else {
             this.controller.handleCommands(request,this.mudUser.getId())
-                    .subscribeOn(Schedulers.io())
+                    .subscribeOn(Schedulers.single())
                     .subscribe(actionResult -> {
                         ctx.writeAndFlush(actionResult.getMessage() + RETURN_CHARS);
 
