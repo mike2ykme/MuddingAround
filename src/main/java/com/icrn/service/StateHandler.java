@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 
@@ -69,18 +68,18 @@ public class StateHandler {
             observableEmitter.onComplete();
         });
     }
-    public Observable<Entity> getAllOnlineEntities() {
-//        return Observable.create(observableEmitter -> {
-//            entities.entrySet().stream()
-//                .map(Map.Entry::getValue)
-//                .filter(Entity::isOnline)
-//            .forEach(observableEmitter::onNext);
-//
-//            observableEmitter.onComplete();
-//        });
-//        return this.getAllEntities()
-//                .filter(Entity::isOnline);
-        return null;
+    public Observable<Entity> getAllOnlineUsers() {
+
+        return Observable.create(observableEmitter -> {
+           this.entities.entrySet().stream()
+           .map(Map.Entry::getValue)
+           .filter(entity -> entity.getType() == EntityType.USER)
+           .map(entity -> (MudUser)entity)
+           .filter(MudUser::isOnline)
+           .forEach(observableEmitter::onNext);
+
+           observableEmitter.onComplete();
+        });
     }
 
     public Single<Entity> saveEntityState(Entity entity){
@@ -234,6 +233,7 @@ public class StateHandler {
         return sendUserMessage(mudUser,msg);
 
     }
+
     public Completable registerUserOnline(MudUser mudUser, ChannelHandlerContext ctx){
         log.debug("Trying to register user online");
         if (mudUser.isOnline()){
@@ -299,7 +299,7 @@ public class StateHandler {
                             }
                         },completableEmitter::onError);
             }else {
-                completableEmitter.onError(new RuntimeException("Unable to find a user to put offline"));
+                completableEmitter.onError(CannotPerformAction.of("Unable to find a user to put offline"));
             }
         });
     }

@@ -1,35 +1,183 @@
 package com.icrn.service;
 
+import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.model.Entity;
-import com.icrn.model.EntityType;
 import com.icrn.model.MudUser;
+import com.icrn.model.Room;
+import io.netty.channel.ChannelHandlerContext;
+import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
 
+import static org.mockito.Mockito.mock;
+
 
 public class StateHandlerTest {
+    private MudUser joe;
+    private ChannelHandlerContext mockCtx;
+
     StateHandler stateHandler;
     HashMap<Long,Entity> map;
     @Before
     public void init(){
         this.map = new HashMap<>();
         this.stateHandler = new StateHandler(map);
+        this.joe = MudUser.makeJoe();
+
+        this.mockCtx = mock(ChannelHandlerContext.class);
     }
 
+
     @Test
-    public void getAllOnlineEntities(){
-        stateHandler.getAllOnlineEntities()
+    public void saveEntitiesState(){
+
+        val joe = MudUser.makeJoe();
+
+        val mike = MudUser.makeJoe();
+        mike.setName("Mike");
+        mike.setId(2L);
+
+        this.stateHandler.saveEntityState(joe,mike)
                 .test()
+                .assertValueCount(2)
+                .assertValues(joe,mike)
                 .assertComplete();
     }
 
     @Test
-    public void getAllOnlineUserEntities(){
-        stateHandler.getAllOnlineEntities()
-                .filter(entity -> entity.getType() == EntityType.USER)
+    public void getAllOnlineEntities(){
+        this.stateHandler.saveEntityState(MudUser.makeJoe()).blockingGet();
+
+        stateHandler.getAllOnlineUsers()
                 .test()
+                .assertValue(entity -> entity.getName().equalsIgnoreCase("joe") &&
+                        entity.getId() == 1L)
+                .assertComplete();
+
+    }
+
+    @Test
+    public void makeSureWeUpdateThenSaveonUpdateEntityStateFunction(){
+        val joe = MudUser.makeJoe();
+        this.stateHandler.saveEntityState(joe).blockingGet();
+
+        this.stateHandler.updateEntityState(1L,entity -> {
+            ((MudUser)entity).setOnline(false);
+            ((MudUser)entity).setPassword("ABC");
+            return entity;
+        }).test()
+                .assertComplete()
+                .assertValueCount(1)
+                .assertValue(entity -> entity.getId() == 1L
+                        && entity.getName().equalsIgnoreCase("joe")
+                        && ((MudUser)entity).isOnline() == false
+                        && ((MudUser)entity).getPassword().equalsIgnoreCase("ABC"));
+    }
+
+    @Test
+    public void registerOfflineUserOffline(){
+        ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
+        // We shouldn't be disconnecting a user that has is not there, so we'll return a status failure for user
+        this.stateHandler.registerUserOffline(MudUser.makeJoe())
+                .test()
+                .assertError(CannotPerformAction.class);
+//                .assertValue(actionResult -> !actionResult.get());
+    }
+
+//    @Test
+//    public void registerOnlineUserOnline(){
+//        this.joe.setOnline(true);
+//        this.stateHandler.getEntities().put(joe.getId(),this.joe);
+//        this.stateHandler.getCommunicationMap().put(MudUser.makeJoe().getId(),mockCtx);
+//
+//        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+//                .test()
+//                .assertComplete()
+//                .assertNoErrors();
+//    }
+
+    @Test
+    public void registerOnlineUserOffline(){
+        this.joe.setOnline(true);
+        this.stateHandler.getEntities().put(joe.getId(),this.joe);
+        this.stateHandler.getCommunicationMap().put(MudUser.makeJoe().getId(),mockCtx);
+
+        this.stateHandler.registerUserOffline(MudUser.makeJoe())
+                .test()
+                .assertComplete()
+                .assertNoErrors();
+    }
+
+    @Test
+    public void verifyWeGetAllSavedRooms(){
+        val room0 = new Room(0L);
+        val room1 = new Room(10L);
+        val room2 = new Room(20L);
+        val room3 = new Room(30L);
+
+        this.stateHandler.saveEntityState(room0,room2,room3,room1)
+                .blockingForEach(ignore ->{});
+
+        this.stateHandler.getAllRooms()
+                .test()
+                .assertValueCount(4)
+                .assertValues(room0,room2,room1,room3)
+                .assertComplete()
+                ;
+
+    }
+    @Test
+    public void ensureWeGetCorrectRoom(){
+        val room0 = new Room(0L);
+        val room1 = new Room(10L);
+        val room2 = new Room(20L);
+        val room3 = new Room(30L);
+
+        this.stateHandler.saveEntityState(room0,room2,room3,room1)
+                .blockingForEach(ignore ->{});
+
+        this.stateHandler.getRoomById(10L)
+                .test()
+                .assertComplete()
+                .assertValue(room1)
+                .assertValueCount(1);
+    }
+
+    @Test
+    public void getAUserById(){
+        val joe = MudUser.makeJoe();
+
+        val mike = MudUser.makeJoe();
+        mike.setName("Mike");
+        mike.setId(2L);
+
+        this.stateHandler.saveEntityState(joe,mike).blockingForEach(entity -> {});
+
+        this.stateHandler.getUserById(1L)
+                .test()
+                .assertValueCount(1)
+                .assertComplete()
+                .assertValue(joe);
+
+        this.stateHandler.getUserById(2L)
+                .test()
+                .assertValueCount(1)
+                .assertComplete()
+                .assertValue(mike);
+
+        this.stateHandler.getEntityById(1L)
+                .test()
+                .assertValueCount(1)
+                .assertComplete()
+                .assertValue(joe);
+    }
+    @Test
+    public void getAllEntities(){
+        stateHandler.getAllEntities()
+                .test()
+                .assertNoErrors()
                 .assertComplete();
     }
 
@@ -42,37 +190,6 @@ public class StateHandlerTest {
                 .assertNoValues()
                 .assertComplete();
     }
-//    @Test
-//    public void updateAndVerifyOnline(){
-//        MudUser mudUser = MudUser.makeJoe();
-//        mudUser.setOnline(false);
-//        stateHandler.saveEntityState(mudUser)
-//            .test()
-//        .assertNoErrors()
-//        .assertComplete();
-//
-//        stateHandler.getAllOnlineEntities()
-//                .test()
-//                .assertComplete()
-//                .assertNoValues()
-//                .assertNoErrors();
-//
-//        stateHandler.updateEntityState(mudUser.getId(), entity ->{
-//                    entity.setOnline(true);
-//                    return entity;
-//                })
-//                .test()
-//                .assertNoErrors()
-//                .assertComplete();
-//
-//        stateHandler.getAllOnlineEntities()
-//                .test()
-//                .assertComplete()
-//                .assertNoErrors()
-//                .assertValue(entity -> entity.isOnline() == true);
-//
-//        this.map.forEach((aLong, entity) -> System.out.println("ID: " + aLong));
-//    }
 
     @Test
     public void verifyGetFullNameFirstBySearches(){
@@ -91,8 +208,6 @@ public class StateHandlerTest {
                 .blockingGet();
         this.stateHandler.saveEntityState(josephene)
                 .blockingGet();
-//        this.stateHandler.getAllOnlineEntities()
-//                .subscribe(System.out::println);
 
         this.stateHandler.getEntityByName("joe")
                 .test()
@@ -104,7 +219,6 @@ public class StateHandlerTest {
                 .assertComplete()
                 .assertValue(entity -> entity.getId() == joseph.getId());
 
-
         this.stateHandler.getEntityByName("josephe")
                 .test()
                 .assertComplete()
@@ -112,7 +226,5 @@ public class StateHandlerTest {
 
         final Entity entity = this.stateHandler.getEntityByName("JOE")
                 .blockingGet();
-//        System.out.println(entity);
-
     }
 }

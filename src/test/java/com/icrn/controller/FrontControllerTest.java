@@ -1,20 +1,15 @@
 package com.icrn.controller;
 
-import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.*;
 import com.icrn.service.StateHandler;
 import io.netty.channel.*;
-import io.netty.channel.embedded.EmbeddedChannel;
 import io.reactivex.Maybe;
-import io.reactivex.schedulers.Schedulers;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
-
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.*;
 
 public class FrontControllerTest {
@@ -168,26 +163,7 @@ public class FrontControllerTest {
                 );
     }
 
-//    @Test
-//    public void verifyTalkStringToCommandHandler(){
-//        val command = "Talk hello world";
-//
-//        ChannelFuture mockChFut = mock(ChannelFuture.class);
-//        when(mockChFut.isSuccess()).thenReturn(true);
-//        when(mockChFut.addListener(any(ChannelFutureListener.class))).thenReturn(mockChFut);
-//        when(this.mockCtx.writeAndFlush(any(String.class))).thenReturn(mockChFut);
-//        when(this.mockCtx.write(any(String.class))).thenReturn(mockChFut);
-//
-//        this.stateHandler.getCommunicationMap().put(joe.getId(),mockCtx);
-//
-//
-//        this.controller.handleCommands(command,joe.getId())
-//                .test()
-//                .assertNoErrors()
-//                .assertComplete();
-////                .assertValue(actionResult -> actionResult.getMessage().toLowerCase().contains("hello world"));
-//
-//    }
+
 
 
     @Test
