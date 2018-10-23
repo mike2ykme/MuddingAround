@@ -223,7 +223,7 @@ public class StateHandler {
 
             }else {
                 log.error("No communication channel for userName: " + user.getName() + " id:" + user.getId());
-                completableEmitter.onError(CannotFindEntity.foundNone());
+                completableEmitter.onError(CannotFindEntity.foundNone("User does not have ctx stored to send message"));
             }
         });
     }

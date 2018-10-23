@@ -16,14 +16,14 @@ public class MudCommandTest {
     @Test
     public void handleCorrectlyTypedCommand(){
         val cmdString = "move north";
-        val mudCmd = MudCommand.parse(cmdString,null);
+        val mudCmd = MudCommand.parse(cmdString,MudUser.makeJoe());
         System.out.println(mudCmd);
 
-        val mudCmd2 = MudCommand.of(Actions.TALK,null,null);
+        val mudCmd2 = MudCommand.of(Actions.TALK,null,MudUser.makeJoe());
         System.out.println(mudCmd2);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void handleIncorrectlyTypedCommand(){
         val badString = "bad command";
         val mudCmd = MudCommand.parse(badString,null);

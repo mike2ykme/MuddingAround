@@ -1,14 +1,19 @@
 package com.icrn.controller;
 
 import com.icrn.model.*;
+import com.icrn.service.AttackHandler;
+import com.icrn.service.SimpleAttackHandler;
 import com.icrn.service.StateHandler;
 import io.netty.channel.*;
 import io.reactivex.Maybe;
+import io.reactivex.Single;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.List;
+
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -17,15 +22,18 @@ public class FrontControllerTest {
     FrontController controller;
     StateHandler stateHandler;
     ChannelHandlerContext mockCtx;
-
+    AttackHandler mockAttackHandler;
+    SimpleAttackHandler simpleAttackHandler = new SimpleAttackHandler();
     @Before
     public void setup(){
         this.joe = MudUser.makeJoe();
         HashMap<Long, Entity> map = new HashMap<>();
         map.put(joe.getId(),joe);
 
+        this.mockAttackHandler = mock(AttackHandler.class);
+
         this.stateHandler = new StateHandler(map);
-        this.controller = new FrontController(stateHandler, null);
+        this.controller = new FrontController(stateHandler, simpleAttackHandler);
         this.mockCtx = mock(ChannelHandlerContext.class);
 
         Room room = new Room(0L);
@@ -173,11 +181,10 @@ public class FrontControllerTest {
 
         this.controller.handleCommands("attack mike",joe.getId())
                 .test()
-                .assertComplete()
                 .assertNoErrors()
                 .assertValue(actionResult ->{
                     System.out.println(actionResult);
-                    return actionResult.getMessage().contains("attacked") && actionResult.getStatus();
+                    return actionResult.getMessage().contains("attacks") && actionResult.getStatus();
                 });
     }
 
@@ -190,10 +197,36 @@ public class FrontControllerTest {
            maybeEmitter.onComplete();
         });
 
+
+        // This won't call onComplete because we received a value
         test
                 .subscribe(s -> System.out.println("osSuccess()")
                 ,Throwable::printStackTrace
                 ,() -> System.out.println("onComplete()")
             );
     }
+
+
+    @Test
+    public void howDoesSingleWork(){
+        val test2 = Maybe.empty();
+
+        test2.subscribe(o -> {
+            System.out.println("TEST");
+        },Throwable::printStackTrace,() -> System.out.println("onComplete()"));
+    }
+
+//    @Test
+//    public void howDoesErrorWork(){
+//        val error = Maybe.error(RuntimeException::new);
+//
+//        val test1 = Single.create(singleEmitter -> {
+//           error.subscribe(o -> System.out.println("TEST"),singleEmitter::onError);
+//        });
+//
+//        val test2 = Single.create(singleEmitter -> {
+//            test1.subscribe(o -> System.out.println("TEST2"),singleEmitter::onError);
+//        });
+//        test2.subscribe(o -> System.out.println("A"),Throwable::printStackTrace);
+//    }
 }

@@ -23,4 +23,6 @@ public interface StatsBasedEntity extends Entity {
 
     Optional<Actions> getLastCommand();
     void setLastCommand(Actions action);
+
+    boolean isOnline();
 }

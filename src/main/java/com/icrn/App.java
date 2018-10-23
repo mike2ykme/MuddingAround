@@ -5,6 +5,7 @@ import com.icrn.io.TelnetServer;
 import com.icrn.model.MudUser;
 import com.icrn.model.Room;
 import com.icrn.model.WorkQueue;
+import com.icrn.service.SimpleAttackHandler;
 import com.icrn.service.StateHandler;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,8 @@ public class App
         System.out.println(
                 stater.saveEntityState(mike).blockingGet());
 
-        val controller = new FrontController(stater,null);
+        val attackHandler = new SimpleAttackHandler();
+        val controller = new FrontController(stater,attackHandler);
         TelnetServer server = new TelnetServer(executor,1,1,8080,controller);
         Channel channel = server.startNetworking().blockingGet();
         log.info("Server has been started");

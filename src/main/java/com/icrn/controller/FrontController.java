@@ -178,50 +178,58 @@ public class FrontController {
                         singleEmitter.onError(throwable);
                     });
 
-//        }).subscribeOn(Schedulers.io());
         });
     }
 
-    private Single<ActionResult> handleUserAttack(MudUser user, MudCommand parsedCommand) {
+    private Single<ActionResult> handleUserAttack(MudUser attacker, MudCommand parsedCommand) {
         log.debug("Inside the handleUserAttack() function");
         return Single.create(singleEmitter -> {
             log.debug(parsedCommand.toString());
-                if (parsedCommand.getTarget().isPresent()){
-                    log.debug("The target was present");
-                    this.stateHandler.getEntityByName(parsedCommand.getTarget().get())
-                            .subscribe(entity -> {
-                                log.debug("found entity matching: " + entity.getName());
-                                if (entity.getType() == EntityType.USER){
-                                    val defender = (StatsBasedEntity)entity;
-                                    this.attackHandler.processAttack(user,defender)
-                                            .subscribe(attackResult -> {
-                                                this.stateHandler.saveEntityState(attackResult.getAttacker(),attackResult.getDefender())
-                                                        .subscribe(savedEntity -> {
-                                                                log.info("Successfully saved: " + savedEntity.getName());
-                                                        },
-                                                                singleEmitter::onError
-                                                        ,() -> {
-                                                                singleEmitter.onSuccess(
-                                                                        ActionResult.success(
-                                                                                String.join("\n",attackResult.getMessageLog())
-                                                                                ,user));
-                                                        });
-                                            },throwable -> {
-                                                log.error(throwable.getMessage());
-                                                singleEmitter.onError(CannotPerformAction.of(throwable.getMessage()));
-                                            });
 
-                                }else {
-                                    singleEmitter.onError(CannotPerformAction.of("Unable to attack that: " + entity.getName()));
-                                }
+            if (!parsedCommand.getTarget().isPresent()) {
+                singleEmitter.onError(CannotPerformAction.of("No target to perform action"));
 
-                            },throwable -> {
-                                singleEmitter.onError(CannotFindEntity.foundNone());
-                            });
+            }else {
+                val defenderName = parsedCommand.getTarget().get();
 
-                }else {
-                    singleEmitter.onError(CannotPerformAction.of("No target to perform action"));
-                }
+                log.debug("The target was present");
+                log.debug("Trying to get Entity: " + defenderName);
+
+                this.stateHandler.getEntityByName(defenderName)
+                    .filter(entity -> entity instanceof StatsBasedEntity)
+                    .map(entity -> (StatsBasedEntity) entity)
+                    .filter(StatsBasedEntity::isOnline)
+                    .subscribe(defender -> {
+                        log.debug("found entity matching: " + defender.getName());
+                        log.debug("Trying to use the attackHandler processAttack()");
+                        this.attackHandler.processAttack(attacker,defender)
+                            .subscribe(attackResult -> {
+                                log.debug("Now trying to attack with attacker: " + attacker.getName() + " defender: " + defenderName);
+                                val strings = String.join("\n",attackResult.getMessageLog());
+
+                                this.stateHandler.saveEntityState(attackResult.getAttacker(), attackResult.getDefender())
+                                    .subscribe(savedEntity -> {
+                                        log.info("Successfully saved: " + savedEntity.getName());
+                                        log.debug(strings);
+                                        System.out.println(strings);
+
+                                        if (savedEntity instanceof MudUser){
+                                            if (savedEntity.getId() != attacker.getId()) {
+                                                this.stateHandler.sendUserMessage(savedEntity.getId(), strings)
+                                                    .subscribe(() -> {
+                                                        log.info("User " + savedEntity.getName() + " was sent message");
+                                                    }, throwable -> log.error(throwable.getMessage()));
+                                            }
+                                        }
+                                    },singleEmitter::onError
+                                    ,() -> {
+                                            singleEmitter.onSuccess(ActionResult.success(strings,attacker));
+                                    });
+                            },singleEmitter::onError);
+
+                    },singleEmitter::onError
+                    ,() -> singleEmitter.onError(CannotFindEntity.foundNone(defenderName)));
+            }
         });
     }
 
