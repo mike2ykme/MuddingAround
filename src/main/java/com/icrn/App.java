@@ -36,7 +36,7 @@ public class App
         System.out.println(
                 stater.saveEntityState(mike).blockingGet());
 
-        val controller = new FrontController(stater);
+        val controller = new FrontController(stater,null);
         TelnetServer server = new TelnetServer(executor,1,1,8080,controller);
         Channel channel = server.startNetworking().blockingGet();
         log.info("Server has been started");

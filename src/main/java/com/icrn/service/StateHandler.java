@@ -1,7 +1,7 @@
 package com.icrn.service;
 
 import com.icrn.dao.EntityDao;
-import com.icrn.exceptions.CannotFindUser;
+import com.icrn.exceptions.CannotFindEntity;
 import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.Entity;
@@ -223,7 +223,7 @@ public class StateHandler {
 
             }else {
                 log.error("No communication channel for userName: " + user.getName() + " id:" + user.getId());
-                completableEmitter.onError(CannotFindUser.foundNone());
+                completableEmitter.onError(CannotFindEntity.foundNone());
             }
         });
     }
@@ -312,7 +312,7 @@ public class StateHandler {
                log.info("We've found this userID in the state");
                singleEmitter.onSuccess(this.entities.get(id));
            }else {
-               singleEmitter.onError(CannotFindUser.foundNone());
+               singleEmitter.onError(CannotFindEntity.foundNone());
            }
         });
 

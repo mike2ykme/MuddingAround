@@ -25,7 +25,7 @@ public class FrontControllerTest {
         map.put(joe.getId(),joe);
 
         this.stateHandler = new StateHandler(map);
-        this.controller = new FrontController(stateHandler);
+        this.controller = new FrontController(stateHandler, null);
         this.mockCtx = mock(ChannelHandlerContext.class);
 
         Room room = new Room(0L);
@@ -45,7 +45,7 @@ public class FrontControllerTest {
     @Test
     public void handleNoUsersAvailableForLogin(){
         val statehandler = new StateHandler(new HashMap<>());
-        val controller = new FrontController(statehandler);
+        val controller = new FrontController(statehandler, null);
         val mockCtx = mock(ChannelHandlerContext.class);
 
         val username = "joe";
@@ -151,7 +151,7 @@ public class FrontControllerTest {
         HashMap<Long, Entity> map = new HashMap<>();
         map.put(joe.getId(),joe);
         StateHandler stater = new StateHandler(map);
-        FrontController controller = new FrontController(stater);
+        FrontController controller = new FrontController(stater, null);
 
         controller.handleCommands(command,joe.getId())
                 .test()
@@ -163,7 +163,23 @@ public class FrontControllerTest {
                 );
     }
 
+    @Test
+    public void allowUsersToAttackEachother(){
+        val joe = MudUser.makeJoe();
+        val mike = MudUser.makeJoe();
+        mike.setId(2L);
+        mike.setName("Mike");
+        this.stateHandler.saveEntityState(joe,mike).blockingForEach(entity -> {});
 
+        this.controller.handleCommands("attack mike",joe.getId())
+                .test()
+                .assertComplete()
+                .assertNoErrors()
+                .assertValue(actionResult ->{
+                    System.out.println(actionResult);
+                    return actionResult.getMessage().contains("attacked") && actionResult.getStatus();
+                });
+    }
 
 
     @Test

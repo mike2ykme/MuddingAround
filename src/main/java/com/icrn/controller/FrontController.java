@@ -1,17 +1,20 @@
 package com.icrn.controller;
 
+import com.icrn.exceptions.CannotFindEntity;
+import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.*;
+import com.icrn.service.AttackHandler;
 import com.icrn.service.StateHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
-import io.reactivex.schedulers.Schedulers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 
+import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -20,6 +23,7 @@ import java.util.Optional;
 @AllArgsConstructor
 public class FrontController {
     private final StateHandler stateHandler;
+    private AttackHandler attackHandler;
 
     public Maybe<MudUser> maybeGetUser(String username, String password) {
         return Maybe.create(maybeEmitter -> {
@@ -111,16 +115,26 @@ public class FrontController {
                         log.info("found user for command: " + user.getName());
                         val parsedCommand = MudCommand.parse(command,user);
                         log.debug("successfully parsed command from user");
+                        user.setLastCommand(parsedCommand.getType());
                         if (user.canPerformAction()
                                 || parsedCommand.getType() == Actions.TALK
                                 || parsedCommand.getType() == Actions.WHISPER ){
+                            user.setLastActionPerformedTime(LocalDateTime.now());
                             switch (parsedCommand.getType()){
                                 case BADCOMMAND:
                                     singleEmitter.onSuccess(
                                         ActionResult.failure("BAD COMMAND. I'm sorry DAVE I can't do this",user)
                                     );
-//                                case ATTACK:
-//                                    break;
+                                case ATTACK:
+//                                    singleEmitter.onSuccess(ActionResult.failure("SORRY I'm NOT READY",user));
+                                    this.handleUserAttack(user,parsedCommand)
+                                            .subscribe(actionResult -> {
+                                                singleEmitter.onSuccess(ActionResult.success(actionResult.getMessage(),user));
+                                            },throwable -> {
+                                                log.error(throwable.getMessage());
+                                                singleEmitter.onSuccess(ActionResult.failure("Unable to attack other user",user));
+                                            });
+                                    break;
 //                                case DEFEND:
 //                                    break;
 //                                case WAIT:
@@ -165,6 +179,49 @@ public class FrontController {
                     });
 
 //        }).subscribeOn(Schedulers.io());
+        });
+    }
+
+    private Single<ActionResult> handleUserAttack(MudUser user, MudCommand parsedCommand) {
+        log.debug("Inside the handleUserAttack() function");
+        return Single.create(singleEmitter -> {
+            log.debug(parsedCommand.toString());
+                if (parsedCommand.getTarget().isPresent()){
+                    log.debug("The target was present");
+                    this.stateHandler.getEntityByName(parsedCommand.getTarget().get())
+                            .subscribe(entity -> {
+                                log.debug("found entity matching: " + entity.getName());
+                                if (entity.getType() == EntityType.USER){
+                                    val defender = (StatsBasedEntity)entity;
+                                    this.attackHandler.processAttack(user,defender)
+                                            .subscribe(attackResult -> {
+                                                this.stateHandler.saveEntityState(attackResult.getAttacker(),attackResult.getDefender())
+                                                        .subscribe(savedEntity -> {
+                                                                log.info("Successfully saved: " + savedEntity.getName());
+                                                        },
+                                                                singleEmitter::onError
+                                                        ,() -> {
+                                                                singleEmitter.onSuccess(
+                                                                        ActionResult.success(
+                                                                                String.join("\n",attackResult.getMessageLog())
+                                                                                ,user));
+                                                        });
+                                            },throwable -> {
+                                                log.error(throwable.getMessage());
+                                                singleEmitter.onError(CannotPerformAction.of(throwable.getMessage()));
+                                            });
+
+                                }else {
+                                    singleEmitter.onError(CannotPerformAction.of("Unable to attack that: " + entity.getName()));
+                                }
+
+                            },throwable -> {
+                                singleEmitter.onError(CannotFindEntity.foundNone());
+                            });
+
+                }else {
+                    singleEmitter.onError(CannotPerformAction.of("No target to perform action"));
+                }
         });
     }
 

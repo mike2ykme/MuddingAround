@@ -29,6 +29,11 @@ public class Room implements Entity {
     }
     public void setName(String name){ this.name = name; }
 
+    @Override
+    public boolean isStatsBased() {
+        return false;
+    }
+
     public Room(Long id){ this.id = id; }
 
     @Override

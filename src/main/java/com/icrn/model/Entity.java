@@ -11,6 +11,7 @@ public interface Entity {
 //    void setRoomLocation(long l);
     String getName();
     void setName(String name);
+    boolean isStatsBased();
 //    void setHP(int HP);
 //    int getHP();
 
