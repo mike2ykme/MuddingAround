@@ -4,8 +4,7 @@ import com.icrn.controller.FrontController;
 import com.icrn.io.TelnetServer;
 import com.icrn.model.MudUser;
 import com.icrn.model.Room;
-import com.icrn.model.WorkQueue;
-import com.icrn.service.SimpleAttackHandler;
+import com.icrn.service.SimpleHandlerImpl;
 import com.icrn.service.StateHandler;
 import io.netty.channel.Channel;
 import lombok.extern.slf4j.Slf4j;
@@ -37,18 +36,13 @@ public class App
         System.out.println(
                 stater.saveEntityState(mike).blockingGet());
 
-        val attackHandler = new SimpleAttackHandler();
-        val controller = new FrontController(stater,attackHandler);
+        val attackHandler = new SimpleHandlerImpl();
+        val controller = new FrontController(stater,attackHandler,attackHandler);
         TelnetServer server = new TelnetServer(executor,1,1,8080,controller);
         Channel channel = server.startNetworking().blockingGet();
         log.info("Server has been started");
         System.out.println("STARTED");
 
-        WorkQueue.getInstance().toObservable()
-            .subscribe(mudCommand -> {
-                System.out.println("Thread on ToObservable of subscribe from WorkQueue: " + Thread.currentThread());
-                System.out.println(mudCommand);
-            });
         System.out.println("AFTER subscribe");
 
         channel.closeFuture().sync();

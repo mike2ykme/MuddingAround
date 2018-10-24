@@ -34,10 +34,12 @@ public class MudCommand {
     }
 
     public static MudCommand parse(String request, MudUser mudUser) {
-        if (mudUser == null || request == null)
-            throw new IllegalArgumentException("arguments are null");
-
+        log.debug(request);
         List<String> cmds = Arrays.asList(request.split("\\s+"));
+
+        if (!cmds.get(0).toLowerCase().contains("defend") && (mudUser == null || request == null)) {
+            throw new IllegalArgumentException("arguments are null");
+        }
 
         try {
             val action = Actions.valueOf(cmds.get(0).toUpperCase());
@@ -61,12 +63,18 @@ public class MudCommand {
 
                 }
                     return MudCommand.of(action,builder.toString().trim(),mudUser);
+            }else if (action == Actions.DEFEND){
+
+                return MudCommand.of(action,mudUser.getName(),mudUser);
+            }else if (action == Actions.REST){
+                return MudCommand.of(Actions.REST,mudUser.getName(),mudUser);
             }else {
                 val size = cmds.size();
                 log.debug("size of cmds: " + size);
                 if (size >1){
                     return MudCommand.of(action,cmds.get(1),mudUser);
                 }else {
+                    log.info("We're creating a BADCOMMAND");
                     return MudCommand.of(Actions.BADCOMMAND,null,mudUser);
                 }
 

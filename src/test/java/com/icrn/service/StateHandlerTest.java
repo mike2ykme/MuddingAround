@@ -4,14 +4,24 @@ import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.model.Entity;
 import com.icrn.model.MudUser;
 import com.icrn.model.Room;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 public class StateHandlerTest {
@@ -226,5 +236,72 @@ public class StateHandlerTest {
 
         final Entity entity = this.stateHandler.getEntityByName("JOE")
                 .blockingGet();
+    }
+
+
+//    @Test
+//    public void verifySendUserMessage(){
+//        val joe = MudUser.makeJoe();
+//        joe.setOnline(false);
+//        this.stateHandler.registerUserOnline(joe,this.mockCtx)
+//                .blockingGet();
+//
+//        val chFut = mock(ChannelFuture.class);
+//
+//        when(this.mockCtx.writeAndFlush(any())).thenReturn(chFut);
+//
+//        when(chFut.addListener(any())).thenReturn(null);
+//        when(chFut.isSuccess()).thenReturn(true);
+//
+//        this.stateHandler.sendUserMessage(joe,"TEST")
+//                .test()
+//                .assertComplete();
+//    }
+    @Test
+    public void registerUserOnlineWithExistingUser()throws Exception{
+
+
+        val mockChannel = mock(Channel.class);
+
+        when(this.mockCtx.channel()).thenReturn(mockChannel);
+
+        val mockChFut = mock(ChannelFuture.class);
+        when(mockChannel.close()).thenReturn(mockChFut);
+
+        try {
+            when(mockChFut.sync()).thenReturn(null);
+        } catch (InterruptedException e) {
+            System.out.println("YEP got expected exception");
+//            e.printStackTrace();
+        }
+
+        when(this.mockCtx.writeAndFlush(any())).thenReturn(mockChFut);
+
+        this.joe.setOnline(false);
+        this.joe = (MudUser)this.stateHandler.saveEntityState(joe).blockingGet();
+        this.stateHandler.registerUserOnline(joe,mockCtx)
+            .test()
+            .assertComplete();
+
+
+        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+                .test()
+                .assertComplete();
+
+        try {
+            when(mockChFut.sync()).thenThrow(InterruptedException.class);
+        } catch (InterruptedException e) {
+//            e.printStackTrace();
+            System.out.println("YEP got expected exception");
+        }
+        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+                .test()
+                .assertError(InterruptedException.class);
+
+
+        when(mockCtx.writeAndFlush(any())).thenThrow(new RuntimeException("TEST"));
+        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+                .test()
+                .assertError(RuntimeException.class);
     }
 }

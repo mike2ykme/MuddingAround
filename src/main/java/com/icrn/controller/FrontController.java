@@ -5,8 +5,10 @@ import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.exceptions.NoUserToDisconnect;
 import com.icrn.model.*;
 import com.icrn.service.AttackHandler;
+import com.icrn.service.RestHandler;
 import com.icrn.service.StateHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
 import lombok.AllArgsConstructor;
@@ -24,6 +26,7 @@ import java.util.Optional;
 public class FrontController {
     private final StateHandler stateHandler;
     private AttackHandler attackHandler;
+    private RestHandler restHandler;
 
     public Maybe<MudUser> maybeGetUser(String username, String password) {
         return Maybe.create(maybeEmitter -> {
@@ -119,12 +122,14 @@ public class FrontController {
                         if (user.canPerformAction()
                                 || parsedCommand.getType() == Actions.TALK
                                 || parsedCommand.getType() == Actions.WHISPER ){
+                            log.info("User can perform action");
                             user.setLastActionPerformedTime(LocalDateTime.now());
                             switch (parsedCommand.getType()){
                                 case BADCOMMAND:
                                     singleEmitter.onSuccess(
                                         ActionResult.failure("BAD COMMAND. I'm sorry DAVE I can't do this",user)
                                     );
+                                    break;
                                 case ATTACK:
 //                                    singleEmitter.onSuccess(ActionResult.failure("SORRY I'm NOT READY",user));
                                     this.handleUserAttack(user,parsedCommand)
@@ -135,10 +140,26 @@ public class FrontController {
                                                 singleEmitter.onSuccess(ActionResult.failure("Unable to attack other user",user));
                                             });
                                     break;
-//                                case DEFEND:
-//                                    break;
-//                                case WAIT:
-//                                    break;
+                                case DEFEND:
+                                    this.handleUserDefend(user,parsedCommand)
+                                            .subscribe(() -> {
+                                                log.debug("able to defend");
+                                                singleEmitter.onSuccess(ActionResult.success("You have defended",user));
+                                            },throwable ->{
+                                                log.error(throwable.getMessage());
+                                                singleEmitter.onSuccess(ActionResult.failure("You were unable to defend",user));
+                                            });
+                                    break;
+                                case REST:
+                                    log.debug("REST reached");
+                                    this.handUserRest(user,parsedCommand)
+                                            .subscribe(singleEmitter::onSuccess
+                                                    ,throwable -> {
+                                                log.info("Error when trying to rest");
+                                                singleEmitter.onSuccess(
+                                                        ActionResult.failure("You were unable to rest",user));
+                                            });
+                                    break;
                                 case MOVE:
                                     try {
                                         log.info("TARGET DIRECTION: " + parsedCommand.getTarget().get());
@@ -177,7 +198,35 @@ public class FrontController {
                     },throwable -> {
                         singleEmitter.onError(throwable);
                     });
+        });
+    }
 
+    private Single<ActionResult> handUserRest(MudUser user, MudCommand parsedCommand) {
+        log.debug("inside handleUserRest()");
+        log.debug("target: " + parsedCommand.getTarget());
+        log.info("CMD: " + parsedCommand.getType() + " target: " + parsedCommand.getTarget().get());
+        return Single.create(singleEmitter -> {
+            this.restHandler.restStatsEntity(user)
+                    .subscribe(statsBasedEntity -> {
+                        log.debug(statsBasedEntity.toString());
+                        this.stateHandler.saveEntityState(statsBasedEntity)
+                                .subscribe(entity -> {
+                                    singleEmitter.onSuccess(
+                                        ActionResult.success("You have rested",user));
+                                },singleEmitter::onError);
+                    },singleEmitter::onError);
+        });
+    }
+
+    private Completable handleUserDefend(MudUser user, MudCommand parsedCommand) {
+        System.out.println(user.getLastCommand().isPresent());
+        System.out.println(user.getLastCommand().get());
+        return Completable.create(completableEmitter -> {
+           this.stateHandler.saveEntityState(user)
+                .subscribe(entity -> {
+                    log.info(entity.getName() + " state has been saved");
+                    completableEmitter.onComplete();
+                },completableEmitter::onError);
         });
     }
 
@@ -258,7 +307,7 @@ public class FrontController {
 
                                 }
                                 System.out.println(builder.toString());
-                                this.stateHandler.sendUserMessage((MudUser)entity,username + ": " +builder.toString().trim())
+                                this.stateHandler.sendUserMessage((MudUser)entity,username + "<WHISPERS>: " +builder.toString().trim())
                                         .subscribe(() ->{
                                             singleEmitter.onSuccess(ActionResult.success("You were able to whisper to " + entity.getName(),user));
                                         } ,throwable -> singleEmitter.onError(throwable));
@@ -276,7 +325,7 @@ public class FrontController {
 
                         },() -> {
                             log.info("We didn't find a user, but it ran to completion");
-                            singleEmitter.onSuccess(ActionResult.failure("Unable to whisper", user));
+                            singleEmitter.onSuccess(ActionResult.failure("Unable to whisper, maybe your friend isn't online", user));
 
                         });
             });

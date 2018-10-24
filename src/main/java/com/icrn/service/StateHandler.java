@@ -247,16 +247,16 @@ public class StateHandler {
                     try {
                         possibleUserContext.writeAndFlush("CLOSING CONNECTION AS NEW CONNECTION FOR THIS USER DETECTED\r\n");
                     } catch (Exception e) {
-                        log.info("ERROR trying to write message to duplicate connection");
-                        log.info(e.getMessage());
-                        e.printStackTrace();
+                        log.error("ERROR trying to write message to duplicate connection");
+                        log.error(e.getMessage());
+                        completableEmitter.onError(e);
                     }
                     try {
                         possibleUserContext.channel().close().sync();
                     } catch (InterruptedException e) {
-                        log.info("ERROR trying to close duplicate connection");
-                        log.info(e.getMessage());
-                        e.printStackTrace();
+                        log.error("ERROR trying to close duplicate connection");
+                        log.error(e.getMessage());
+                        completableEmitter.onError(e);
                     }
                 }
 

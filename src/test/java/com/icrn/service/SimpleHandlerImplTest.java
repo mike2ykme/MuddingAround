@@ -1,20 +1,17 @@
 package com.icrn.service;
 
 import com.icrn.model.MudUser;
-import com.icrn.model.StatsBasedEntity;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-
-public class SimpleAttackHandlerTest {
+public class SimpleHandlerImplTest {
 
     private AttackHandler attackHandler;
 
     @Before
     public void setup(){
-        this.attackHandler = new SimpleAttackHandler();
+        this.attackHandler = new SimpleHandlerImpl();
     }
 
     @Test

@@ -38,7 +38,11 @@ public class MudUser implements Entity, StatsBasedEntity{
 
     @Override
     public Optional<Actions> getLastCommand() {
-        return Optional.empty();
+
+        if (lastCommand == null)
+            return Optional.empty();
+        else
+            return Optional.of(lastCommand);
     }
 
     @Override
@@ -78,17 +82,18 @@ public class MudUser implements Entity, StatsBasedEntity{
         if (hp <=0){
             this.HP = 0;
             this.setUserStatus(UserStatus.KO);
+
+        }else if (hp > this.maxHP){
+            this.HP = this.maxHP;
+
         }else {
             this.HP = hp;
+
         }
-    }
-    public int attack(Entity entity) {
-//        TO.DO();
-//        TODO
-//        entity.setHP(entity.getHP()-this.getSTR());
-//        entity.setLastAttackedById(this.getId());
-        TO.DO();
-        return this.getSTR();
+
+        if (this.HP >0)
+            this.setUserStatus(UserStatus.ACTIVE);
+
     }
 
     @Override

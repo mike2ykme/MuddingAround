@@ -2,17 +2,14 @@ package com.icrn.controller;
 
 import com.icrn.model.*;
 import com.icrn.service.AttackHandler;
-import com.icrn.service.SimpleAttackHandler;
+import com.icrn.service.SimpleHandlerImpl;
 import com.icrn.service.StateHandler;
 import io.netty.channel.*;
-import io.reactivex.Maybe;
-import io.reactivex.Single;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.List;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -23,7 +20,7 @@ public class FrontControllerTest {
     StateHandler stateHandler;
     ChannelHandlerContext mockCtx;
     AttackHandler mockAttackHandler;
-    SimpleAttackHandler simpleAttackHandler = new SimpleAttackHandler();
+    SimpleHandlerImpl simpleHandlerImpl = new SimpleHandlerImpl();
     @Before
     public void setup(){
         this.joe = MudUser.makeJoe();
@@ -33,7 +30,7 @@ public class FrontControllerTest {
         this.mockAttackHandler = mock(AttackHandler.class);
 
         this.stateHandler = new StateHandler(map);
-        this.controller = new FrontController(stateHandler, simpleAttackHandler);
+        this.controller = new FrontController(stateHandler, simpleHandlerImpl, simpleHandlerImpl);
         this.mockCtx = mock(ChannelHandlerContext.class);
 
         Room room = new Room(0L);
@@ -53,7 +50,7 @@ public class FrontControllerTest {
     @Test
     public void handleNoUsersAvailableForLogin(){
         val statehandler = new StateHandler(new HashMap<>());
-        val controller = new FrontController(statehandler, null);
+        val controller = new FrontController(statehandler, null, null);
         val mockCtx = mock(ChannelHandlerContext.class);
 
         val username = "joe";
@@ -159,7 +156,7 @@ public class FrontControllerTest {
         HashMap<Long, Entity> map = new HashMap<>();
         map.put(joe.getId(),joe);
         StateHandler stater = new StateHandler(map);
-        FrontController controller = new FrontController(stater, null);
+        FrontController controller = new FrontController(stater, null,null);
 
         controller.handleCommands(command,joe.getId())
                 .test()
@@ -172,7 +169,7 @@ public class FrontControllerTest {
     }
 
     @Test
-    public void allowUsersToAttackEachother(){
+    public void allowUsersToAttackEachOther(){
         val joe = MudUser.makeJoe();
         val mike = MudUser.makeJoe();
         mike.setId(2L);
@@ -188,45 +185,41 @@ public class FrontControllerTest {
                 });
     }
 
-
     @Test
-    public void howDoesMaybeWork(){
-//        val test = Maybe.just("A");
-        val test = Maybe.create(maybeEmitter -> {
-           maybeEmitter.onSuccess("B");
-           maybeEmitter.onComplete();
-        });
+    public void testUserDefend(){
+        val joe = MudUser.makeJoe();
 
+        this.stateHandler.saveEntityState(joe).blockingGet();
 
-        // This won't call onComplete because we received a value
-        test
-                .subscribe(s -> System.out.println("osSuccess()")
-                ,Throwable::printStackTrace
-                ,() -> System.out.println("onComplete()")
-            );
+        this.controller.handleCommands("defend",joe.getId())
+                .test()
+                .assertComplete()
+                .assertNoErrors()
+                .assertValue(actionResult ->
+                        actionResult.getStatus()
+                        && actionResult.getMessage().toLowerCase().contains("defend")
+                );
+        val updatedJoe = (MudUser) this.stateHandler.getEntityByName("joe").blockingGet();
+
+        assertTrue(updatedJoe.getLastCommand().get() == Actions.DEFEND);
     }
 
 
     @Test
-    public void howDoesSingleWork(){
-        val test2 = Maybe.empty();
+    public void testRestingUser(){
+        val joe = MudUser.makeJoe();
+        val prevHp = joe.getHP();
+        val cmd = "rest";
+        this.stateHandler.saveEntityState(joe).blockingGet();
 
-        test2.subscribe(o -> {
-            System.out.println("TEST");
-        },Throwable::printStackTrace,() -> System.out.println("onComplete()"));
+        this.controller.handleCommands(cmd,joe.getId())
+                .test()
+                .assertNoErrors()
+                .assertComplete()
+                .assertValue(actionResult ->
+                   actionResult.getStatus() &&
+                   prevHp < actionResult.getUser().getHP() &&
+                   actionResult.getMessage().toLowerCase().contains("rested")
+                );
     }
-
-//    @Test
-//    public void howDoesErrorWork(){
-//        val error = Maybe.error(RuntimeException::new);
-//
-//        val test1 = Single.create(singleEmitter -> {
-//           error.subscribe(o -> System.out.println("TEST"),singleEmitter::onError);
-//        });
-//
-//        val test2 = Single.create(singleEmitter -> {
-//            test1.subscribe(o -> System.out.println("TEST2"),singleEmitter::onError);
-//        });
-//        test2.subscribe(o -> System.out.println("A"),Throwable::printStackTrace);
-//    }
 }
