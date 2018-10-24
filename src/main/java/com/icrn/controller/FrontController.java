@@ -119,11 +119,22 @@ public class FrontController {
                         val parsedCommand = MudCommand.parse(command,user);
                         log.debug("successfully parsed command from user");
                         user.setLastCommand(parsedCommand.getType());
-                        if (user.canPerformAction()
+
+                        val canUserPerformAction = user.canPerformAction();
+                        if (!canUserPerformAction &&
+                            parsedCommand.getType() != Actions.TALK &&
+                            parsedCommand.getType() != Actions.WHISPER){
+                            log.info("User can't perform action right now. User: " + user.getName());
+                            singleEmitter.onSuccess(ActionResult.failure("You're too tired to act",user));
+                        }else if (canUserPerformAction
                                 || parsedCommand.getType() == Actions.TALK
                                 || parsedCommand.getType() == Actions.WHISPER ){
                             log.info("User can perform action");
-                            user.setLastActionPerformedTime(LocalDateTime.now());
+                            if (parsedCommand.getType() != Actions.TALK &&
+                            parsedCommand.getType() != Actions.WHISPER){
+                                user.setLastActionPerformedTime(LocalDateTime.now());
+                            }
+
                             switch (parsedCommand.getType()){
                                 case BADCOMMAND:
                                     singleEmitter.onSuccess(
@@ -188,6 +199,10 @@ public class FrontController {
                                                 singleEmitter.onSuccess(ActionResult.failure("Unable to whisper",user));
                                             });
 
+                                    break;
+                                case STATUS:
+                                    log.debug("The STATUS branch");
+                                    singleEmitter.onSuccess(ActionResult.success(user.toString(),user));
                                     break;
                                 default:
                                     singleEmitter.onSuccess(

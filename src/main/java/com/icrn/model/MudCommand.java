@@ -45,29 +45,31 @@ public class MudCommand {
             val action = Actions.valueOf(cmds.get(0).toUpperCase());
             log.info("found action: " + action.toString());
 
-            if (action == Actions.TALK){
+            if (action == Actions.TALK) {
                 System.out.println("MATCHES MOVE");
                 StringBuilder builder = new StringBuilder();
 
-                for (int i =1; i <cmds.size(); i++){
+                for (int i = 1; i < cmds.size(); i++) {
                     builder.append(cmds.get(i) + " ");
 
                 }
-                return MudCommand.of(Actions.TALK,builder.toString().trim(),mudUser);
+                return MudCommand.of(Actions.TALK, builder.toString().trim(), mudUser);
 
-            }else if (action == Actions.WHISPER){
+            } else if (action == Actions.WHISPER) {
                 StringBuilder builder = new StringBuilder();
 
-                for (int i =1; i <cmds.size(); i++){
+                for (int i = 1; i < cmds.size(); i++) {
                     builder.append(cmds.get(i) + " ");
 
                 }
-                    return MudCommand.of(action,builder.toString().trim(),mudUser);
-            }else if (action == Actions.DEFEND){
+                return MudCommand.of(action, builder.toString().trim(), mudUser);
+            } else if (action == Actions.DEFEND) {
 
-                return MudCommand.of(action,mudUser.getName(),mudUser);
-            }else if (action == Actions.REST){
-                return MudCommand.of(Actions.REST,mudUser.getName(),mudUser);
+                return MudCommand.of(action, mudUser.getName(), mudUser);
+            } else if (action == Actions.REST) {
+                return MudCommand.of(Actions.REST, mudUser.getName(), mudUser);
+            } else if (action == Actions.STATUS){
+                return MudCommand.of(Actions.STATUS,mudUser.getName(),mudUser);
             }else {
                 val size = cmds.size();
                 log.debug("size of cmds: " + size);
