@@ -64,12 +64,14 @@ public class MudCommand {
                 }
                 return MudCommand.of(action, builder.toString().trim(), mudUser);
             } else if (action == Actions.DEFEND) {
-
                 return MudCommand.of(action, mudUser.getName(), mudUser);
+
             } else if (action == Actions.REST) {
                 return MudCommand.of(Actions.REST, mudUser.getName(), mudUser);
+
             } else if (action == Actions.STATUS){
                 return MudCommand.of(Actions.STATUS,mudUser.getName(),mudUser);
+
             }else {
                 val size = cmds.size();
                 log.debug("size of cmds: " + size);

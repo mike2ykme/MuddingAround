@@ -1,5 +1,6 @@
 package com.icrn.model;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface StatsBasedEntity extends Entity {
@@ -25,4 +26,12 @@ public interface StatsBasedEntity extends Entity {
     void setLastCommand(Actions action);
 
     boolean isOnline();
+    @Override
+    default boolean isStatsBased(){
+        return true;
+    }
+
+    boolean canPerformAction();
+
+    LocalDateTime performedAction();
 }

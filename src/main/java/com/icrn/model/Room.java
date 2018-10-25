@@ -16,7 +16,7 @@ public class Room implements Entity {
     long roomLocation;
     private Long id;
     private String name;
-
+    private MobInfo mobInfo;
     public String getName(){
         if (this.name == null)
             return "ROOM ID:" + id.toString();

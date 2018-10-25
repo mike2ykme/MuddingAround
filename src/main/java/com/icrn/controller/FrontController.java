@@ -87,7 +87,7 @@ public class FrontController {
                         if (room.allowsMovement(direction)){
                             log.info("ROOM allows movement in this direction: " + direction);
                             mudUser.setRoomLocation(room.getRoomIdFromDirection(direction));
-                            mudUser.performAction();
+                            mudUser.performedAction();
 
                             this.stateHandler.saveEntityState(mudUser)
                                     .subscribe(entity -> {
@@ -132,7 +132,8 @@ public class FrontController {
                             log.info("User can perform action");
                             if (parsedCommand.getType() != Actions.TALK &&
                             parsedCommand.getType() != Actions.WHISPER){
-                                user.setLastActionPerformedTime(LocalDateTime.now());
+//                                user.setLastActionPerformedTime(LocalDateTime.now());
+                                user.performedAction();
                             }
 
                             switch (parsedCommand.getType()){
@@ -372,4 +373,5 @@ public class FrontController {
             });
         }
     }
+
 }

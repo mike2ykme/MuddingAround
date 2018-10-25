@@ -1,6 +1,6 @@
 package com.icrn.model;
 
-public enum UserStatus {
+public enum EntityStatus {
     KO, ACTIVE;
 
 }

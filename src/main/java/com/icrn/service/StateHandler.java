@@ -4,10 +4,7 @@ import com.icrn.dao.EntityDao;
 import com.icrn.exceptions.CannotFindEntity;
 import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.exceptions.NoUserToDisconnect;
-import com.icrn.model.Entity;
-import com.icrn.model.EntityType;
-import com.icrn.model.MudUser;
-import com.icrn.model.Room;
+import com.icrn.model.*;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -19,10 +16,12 @@ import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import lombok.var;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -33,6 +32,12 @@ public class StateHandler {
     private final HashMap<Long,ChannelHandlerContext> communicationMap = new HashMap<>();
     static final String RETURN_CHARS = "\r\n";
     EntityDao entityDao = null;
+
+
+    public  StateHandler(){
+        this.entities = new ConcurrentHashMap<>();
+
+    }
 
     public StateHandler(Map<Long,Entity> entities){
         this.entities = entities;
@@ -316,5 +321,26 @@ public class StateHandler {
            }
         });
 
+    }
+
+    public Single<Entity> createNewEntity(Entity entity) {
+        // NOTE this will overwrite an ID, but it won't do any copying so it'll just point to an existing element
+        return Single.create(singleEmitter -> {
+            if (entity.getId() != null && this.entities.containsKey(entity.getId())) {
+                singleEmitter.onError(CannotPerformAction.of("Entity with this ID already exists."));
+            }else {
+                val generator = new Random();
+                var rand = generator.nextLong() & Long.MAX_VALUE; //We only want positive number IDs
+
+                while (this.entities.containsKey(rand)){
+                    rand = generator.nextLong();
+                }
+                entity.setId(rand);
+
+                this.entities.put(rand,entity);
+
+                singleEmitter.onSuccess(entity);
+            }
+        });
     }
 }

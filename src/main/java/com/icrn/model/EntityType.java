@@ -1,5 +1,5 @@
 package com.icrn.model;
 
 public enum EntityType {
-    ROOM, ATTACKABLE, USER
+    ROOM, MOB, USER
 }

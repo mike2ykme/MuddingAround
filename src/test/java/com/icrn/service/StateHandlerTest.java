@@ -29,9 +29,10 @@ public class StateHandlerTest {
     private ChannelHandlerContext mockCtx;
 
     StateHandler stateHandler;
-    HashMap<Long,Entity> map;
+    HashMap<Long, Entity> map;
+
     @Before
-    public void init(){
+    public void init() {
         this.map = new HashMap<>();
         this.stateHandler = new StateHandler(map);
         this.joe = MudUser.makeJoe();
@@ -41,7 +42,7 @@ public class StateHandlerTest {
 
 
     @Test
-    public void saveEntitiesState(){
+    public void saveEntitiesState() {
 
         val joe = MudUser.makeJoe();
 
@@ -49,15 +50,15 @@ public class StateHandlerTest {
         mike.setName("Mike");
         mike.setId(2L);
 
-        this.stateHandler.saveEntityState(joe,mike)
+        this.stateHandler.saveEntityState(joe, mike)
                 .test()
                 .assertValueCount(2)
-                .assertValues(joe,mike)
+                .assertValues(joe, mike)
                 .assertComplete();
     }
 
     @Test
-    public void getAllOnlineEntities(){
+    public void getAllOnlineEntities() {
         this.stateHandler.saveEntityState(MudUser.makeJoe()).blockingGet();
 
         stateHandler.getAllOnlineUsers()
@@ -69,25 +70,25 @@ public class StateHandlerTest {
     }
 
     @Test
-    public void makeSureWeUpdateThenSaveonUpdateEntityStateFunction(){
+    public void makeSureWeUpdateThenSaveonUpdateEntityStateFunction() {
         val joe = MudUser.makeJoe();
         this.stateHandler.saveEntityState(joe).blockingGet();
 
-        this.stateHandler.updateEntityState(1L,entity -> {
-            ((MudUser)entity).setOnline(false);
-            ((MudUser)entity).setPassword("ABC");
+        this.stateHandler.updateEntityState(1L, entity -> {
+            ((MudUser) entity).setOnline(false);
+            ((MudUser) entity).setPassword("ABC");
             return entity;
         }).test()
                 .assertComplete()
                 .assertValueCount(1)
                 .assertValue(entity -> entity.getId() == 1L
                         && entity.getName().equalsIgnoreCase("joe")
-                        && ((MudUser)entity).isOnline() == false
-                        && ((MudUser)entity).getPassword().equalsIgnoreCase("ABC"));
+                        && ((MudUser) entity).isOnline() == false
+                        && ((MudUser) entity).getPassword().equalsIgnoreCase("ABC"));
     }
 
     @Test
-    public void registerOfflineUserOffline(){
+    public void registerOfflineUserOffline() {
         ChannelHandlerContext ctx = mock(ChannelHandlerContext.class);
         // We shouldn't be disconnecting a user that has is not there, so we'll return a status failure for user
         this.stateHandler.registerUserOffline(MudUser.makeJoe())
@@ -109,10 +110,10 @@ public class StateHandlerTest {
 //    }
 
     @Test
-    public void registerOnlineUserOffline(){
+    public void registerOnlineUserOffline() {
         this.joe.setOnline(true);
-        this.stateHandler.getEntities().put(joe.getId(),this.joe);
-        this.stateHandler.getCommunicationMap().put(MudUser.makeJoe().getId(),mockCtx);
+        this.stateHandler.getEntities().put(joe.getId(), this.joe);
+        this.stateHandler.getCommunicationMap().put(MudUser.makeJoe().getId(), mockCtx);
 
         this.stateHandler.registerUserOffline(MudUser.makeJoe())
                 .test()
@@ -121,32 +122,35 @@ public class StateHandlerTest {
     }
 
     @Test
-    public void verifyWeGetAllSavedRooms(){
+    public void verifyWeGetAllSavedRooms() {
         val room0 = new Room(0L);
         val room1 = new Room(10L);
         val room2 = new Room(20L);
         val room3 = new Room(30L);
 
-        this.stateHandler.saveEntityState(room0,room2,room3,room1)
-                .blockingForEach(ignore ->{});
+        this.stateHandler.saveEntityState(room0, room2, room3, room1)
+                .blockingForEach(ignore -> {
+                });
 
         this.stateHandler.getAllRooms()
                 .test()
                 .assertValueCount(4)
-                .assertValues(room0,room2,room1,room3)
+                .assertValues(room0, room2, room1, room3)
                 .assertComplete()
-                ;
+        ;
 
     }
+
     @Test
-    public void ensureWeGetCorrectRoom(){
+    public void ensureWeGetCorrectRoom() {
         val room0 = new Room(0L);
         val room1 = new Room(10L);
         val room2 = new Room(20L);
         val room3 = new Room(30L);
 
-        this.stateHandler.saveEntityState(room0,room2,room3,room1)
-                .blockingForEach(ignore ->{});
+        this.stateHandler.saveEntityState(room0, room2, room3, room1)
+                .blockingForEach(ignore -> {
+                });
 
         this.stateHandler.getRoomById(10L)
                 .test()
@@ -156,14 +160,15 @@ public class StateHandlerTest {
     }
 
     @Test
-    public void getAUserById(){
+    public void getAUserById() {
         val joe = MudUser.makeJoe();
 
         val mike = MudUser.makeJoe();
         mike.setName("Mike");
         mike.setId(2L);
 
-        this.stateHandler.saveEntityState(joe,mike).blockingForEach(entity -> {});
+        this.stateHandler.saveEntityState(joe, mike).blockingForEach(entity -> {
+        });
 
         this.stateHandler.getUserById(1L)
                 .test()
@@ -183,8 +188,9 @@ public class StateHandlerTest {
                 .assertComplete()
                 .assertValue(joe);
     }
+
     @Test
-    public void getAllEntities(){
+    public void getAllEntities() {
         stateHandler.getAllEntities()
                 .test()
                 .assertNoErrors()
@@ -192,17 +198,17 @@ public class StateHandlerTest {
     }
 
     @Test
-    public void getAllEntitiesInRoom(){
+    public void getAllEntitiesInRoom() {
         long roomId = 3L;
         stateHandler.getAllEntitiesByRoom(0L)
-            .test()
+                .test()
                 .assertNoErrors()
                 .assertNoValues()
                 .assertComplete();
     }
 
     @Test
-    public void verifyGetFullNameFirstBySearches(){
+    public void verifyGetFullNameFirstBySearches() {
         MudUser joe = MudUser.makeJoe();
         MudUser joseph = MudUser.makeJoe();
         joseph.setId(2L);
@@ -239,7 +245,7 @@ public class StateHandlerTest {
     }
 
 
-//    @Test
+    //    @Test
 //    public void verifySendUserMessage(){
 //        val joe = MudUser.makeJoe();
 //        joe.setOnline(false);
@@ -258,7 +264,7 @@ public class StateHandlerTest {
 //                .assertComplete();
 //    }
     @Test
-    public void registerUserOnlineWithExistingUser()throws Exception{
+    public void registerUserOnlineWithExistingUser() throws Exception {
 
 
         val mockChannel = mock(Channel.class);
@@ -278,13 +284,13 @@ public class StateHandlerTest {
         when(this.mockCtx.writeAndFlush(any())).thenReturn(mockChFut);
 
         this.joe.setOnline(false);
-        this.joe = (MudUser)this.stateHandler.saveEntityState(joe).blockingGet();
-        this.stateHandler.registerUserOnline(joe,mockCtx)
-            .test()
-            .assertComplete();
+        this.joe = (MudUser) this.stateHandler.saveEntityState(joe).blockingGet();
+        this.stateHandler.registerUserOnline(joe, mockCtx)
+                .test()
+                .assertComplete();
 
 
-        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+        this.stateHandler.registerUserOnline(MudUser.makeJoe(), mockCtx)
                 .test()
                 .assertComplete();
 
@@ -294,14 +300,43 @@ public class StateHandlerTest {
 //            e.printStackTrace();
             System.out.println("YEP got expected exception");
         }
-        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+        this.stateHandler.registerUserOnline(MudUser.makeJoe(), mockCtx)
                 .test()
                 .assertError(InterruptedException.class);
 
 
         when(mockCtx.writeAndFlush(any())).thenThrow(new RuntimeException("TEST"));
-        this.stateHandler.registerUserOnline(MudUser.makeJoe(),mockCtx)
+        this.stateHandler.registerUserOnline(MudUser.makeJoe(), mockCtx)
                 .test()
                 .assertError(RuntimeException.class);
+    }
+
+    @Test
+    public void testCreateNewEntity() {
+        val joe = MudUser.makeJoe();
+        joe.setName(null);
+        this.stateHandler.createNewEntity(joe)
+                .test()
+                .assertComplete()
+                .assertValue(entity -> {
+                    System.out.println(entity);
+                    return entity.getId() != null && entity.getId() != 1;
+                });
+    }
+
+    @Test
+    public void ensureSameNameIsOK(){
+        //This is really going to be useful when dealing with mobs that have the same name
+
+        val joe = MudUser.makeJoe();
+        val joe2 = MudUser.makeJoe();
+
+        this.stateHandler.saveEntityState(joe,joe2).blockingForEach(System.out::println);
+
+        this.stateHandler.getEntityByName("joe")
+                .test()
+                .assertValueCount(1)
+                .assertComplete();
+
     }
 }
