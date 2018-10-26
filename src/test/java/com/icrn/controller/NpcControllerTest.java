@@ -1,9 +1,6 @@
 package com.icrn.controller;
 
-import com.icrn.model.Mob;
-import com.icrn.model.MobInfo;
-import com.icrn.model.MudUser;
-import com.icrn.model.Room;
+import com.icrn.model.*;
 import com.icrn.service.AttackHandler;
 import com.icrn.service.SimpleHandlerImpl;
 import com.icrn.service.StateHandler;
@@ -13,12 +10,15 @@ import io.reactivex.Single;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Matchers;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 public class NpcControllerTest {
     private NpcController controller;
@@ -81,19 +81,33 @@ public class NpcControllerTest {
         val joe = MudUser.makeJoe();
         val glork = Mob.makeGlork();
         val angryGlork = Mob.makeGlork();
+
+        val prevHp = joe.getHP();
+
         angryGlork.setName("angryGlork");
         angryGlork.setAggressionIndex(100);
-
-        when(mockStateHandler.sendUserMessage(eq(1L),eq("attacked")))
+        System.out.println(glork);
+        System.out.println(joe);
+        List<String> mockList = new ArrayList<>();
+        mockList.add("TEST STRING");
+        when(mockStateHandler.sendUserMessage(eq(1L),
+                Matchers.contains("attack")
+        ))
                 .thenReturn(Completable.complete());
+
+        when(mockStateHandler.saveEntityState(angryGlork,joe))
+                .thenReturn(Observable.just((Entity)angryGlork,(Entity)joe));
+
+        this.controllerHasMock.setAttackHandler(this.attackHandler);
 
         this.controllerHasMock.processMonsterAttack(angryGlork,joe)
                 .test()
                 .assertComplete()
                 .assertNoErrors()
                 ;
-
-
+        assertTrue(prevHp > joe.getHP());
+        assertTrue(joe.getLastAttackedById().get() == angryGlork.getId());
+        assertFalse(angryGlork.canPerformAction());
 
     }
 }

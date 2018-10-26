@@ -1,12 +1,14 @@
 package com.icrn.model;
 
 import lombok.Data;
+import lombok.ToString;
 import lombok.val;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Data
+@ToString
 public class Mob implements StatsBasedEntity {
     private Long id;
     private static int SECONDS_TO_COMPARE = 20;
@@ -33,6 +35,9 @@ public class Mob implements StatsBasedEntity {
         mob.setMaxHP(template.getMaxHP());
         mob.setSTR(template.getSTR());
         mob.setRoomLocation(template.getRoom());
+        LocalDateTime time = LocalDateTime.of(2018,1,1,1,1);
+        mob.setLastActionPerformedTime(time);
+        mob.setEntityStatus(EntityStatus.ACTIVE);
         return mob;
     }
 
@@ -56,7 +61,7 @@ public class Mob implements StatsBasedEntity {
     }
     @Override
     public Optional<Long> getLastAttackedById() {
-        if (this.getLastAttackedById() == null)
+        if (this.lastAttackedById != null)
             return Optional.of(this.lastAttackedById);
         else
             return Optional.empty();
@@ -79,7 +84,11 @@ public class Mob implements StatsBasedEntity {
 
 
     public boolean canPerformAction() {
-        if (lastActionPerformedTime
+        if (this.getLastActionPerformedTime() == null){
+            this.performedAction();
+            return true;
+        }
+        else if (lastActionPerformedTime
                 .plusSeconds((SECONDS_TO_COMPARE/this.DEX))
                 .isBefore(LocalDateTime.now())){
             return true;
@@ -91,5 +100,23 @@ public class Mob implements StatsBasedEntity {
         val oldTime = this.lastActionPerformedTime;
         this.lastActionPerformedTime = LocalDateTime.now();
         return oldTime;
+    }
+
+    @Override
+    public void setHP(int hp){
+        if (hp <=0){
+            this.HP = 0;
+            this.setEntityStatus(EntityStatus.KO);
+
+        }else if (hp > this.maxHP){
+            this.HP = this.maxHP;
+
+        }else {
+            this.HP = hp;
+        }
+
+        if (this.HP >0)
+            this.setEntityStatus(EntityStatus.ACTIVE);
+
     }
 }

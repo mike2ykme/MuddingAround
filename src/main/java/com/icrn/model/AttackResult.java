@@ -19,4 +19,12 @@ public class AttackResult {
     public static AttackResult of(StatsBasedEntity attacker, StatsBasedEntity defender, List<String> log){
         return new AttackResult(attacker,defender,log);
     }
+    public String getMessageLogString(){
+        StringBuilder builder = new StringBuilder();
+
+        for (String line : messageLog){
+            builder.append(line);
+        }
+        return builder.toString();
+    }
 }

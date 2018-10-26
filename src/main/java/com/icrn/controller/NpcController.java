@@ -2,12 +2,11 @@ package com.icrn.controller;
 
 import com.icrn.model.EntityType;
 import com.icrn.model.Mob;
-import com.icrn.model.MudUser;
 import com.icrn.model.StatsBasedEntity;
 import com.icrn.service.AttackHandler;
 import com.icrn.service.StateHandler;
 import io.reactivex.Completable;
-import io.reactivex.Single;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
@@ -15,6 +14,7 @@ import lombok.var;
 import java.util.Random;
 
 @Slf4j
+@Data
 public class NpcController {
     private StateHandler stateHandler;
     private AttackHandler attackHandler;
@@ -76,11 +76,27 @@ public class NpcController {
             if (!attacker.canPerformAction())
                 completableEmitter.onComplete();
             else {
-                this.attackHandler.processAttack(attacker,defender)
-                        .subscribe(attackResult -> {
+                val dName= defender.getName();
+                val dId = defender.getId();
 
-                        },completableEmitter::onError);
+                attacker.performedAction();
+                this.attackHandler.processAttack(attacker,defender)
+                    .subscribe(attackResult -> {
+                        log.info("Mob id: " +attacker.getId() + " attacked: " + dId + " -- " + dName);
+
+                        this.stateHandler.saveEntityState(attacker,defender)
+                                .subscribe(entity -> {
+                                    log.info("Entity " + entity.getName() + " -- " + entity.getId() + " was saved");
+                                },completableEmitter::onError);
+
+                        this.stateHandler.sendUserMessage(dId,attackResult.getMessageLogString())
+                                .subscribe(() -> {
+                                    log.info("User ID: " + dId + " -- " + dName + " was sent a message after the attack");
+                                },completableEmitter::onError);
+
+                    },completableEmitter::onError);
             }
+            completableEmitter.onComplete();
         });
     }
 }

@@ -77,7 +77,6 @@ public class MudUser implements Entity, StatsBasedEntity{
 
     public  MudUser(Long id,String name, String password,StatsBasedEntityTemplate template, EntityStatus entityStatus){
         LocalDateTime time = LocalDateTime.of(2018,1,1,1,1);
-//        time.toEpochSecond()
         this.setId(id);
         this.setName(name);
         this.setPassword(password);
@@ -101,7 +100,6 @@ public class MudUser implements Entity, StatsBasedEntity{
 
         }else {
             this.HP = hp;
-
         }
 
         if (this.HP >0)
