@@ -17,6 +17,7 @@ public class Room implements Entity {
     private Long id;
     private String name;
     private MobInfo mobInfo;
+    private boolean safeZone;
     public String getName(){
         if (this.name == null)
             return "ROOM ID:" + id.toString();
@@ -65,4 +66,5 @@ public class Room implements Entity {
             observableEmitter.onComplete();
         });
     }
+
 }

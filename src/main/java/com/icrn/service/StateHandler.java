@@ -8,22 +8,18 @@ import com.icrn.model.*;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.reactivex.Completable;
-import io.reactivex.Maybe;
+import io.reactivex.*;
 import io.reactivex.Observable;
-import io.reactivex.Single;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Random;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 
 @Slf4j @Data
@@ -341,6 +337,24 @@ public class StateHandler {
 
                 singleEmitter.onSuccess(entity);
             }
+        });
+    }
+
+    public Single<Map<Long,Entity>> getRoomEntityMap(Long roomId) {
+        return Single.create(singleEmitter -> {
+            val map = new HashMap<Long,Entity>();
+
+            entities.entrySet().stream()
+                    .filter(longEntityEntry -> longEntityEntry.getValue().getRoomLocation() == roomId)
+                    .map(entry -> entry.getValue())
+                    .forEach(entity -> {
+                        if (!singleEmitter.isDisposed()){
+                            map.put(entity.getId(),entity);
+                        }
+                    });
+
+            singleEmitter.onSuccess(Collections.unmodifiableMap(map));
+
         });
     }
 }

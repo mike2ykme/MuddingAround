@@ -110,4 +110,21 @@ public class NpcControllerTest {
         assertFalse(angryGlork.canPerformAction());
 
     }
+
+
+    @Test
+    public void verifyProcessingAllMonstersInARoom(){
+        // Before we do anything we're just going to look at each room and find if there are
+        // any active Mobs in it
+
+        when(this.mockStateHandler.getAllRooms()).thenReturn(null);
+
+        when(this.mockStateHandler.getAllEntitiesByRoom(0L)).thenReturn(null);
+
+
+        this.controllerHasMock.processMonstersInAllRooms()
+                .test()
+                .assertComplete()
+                .assertNoErrors();
+    }
 }

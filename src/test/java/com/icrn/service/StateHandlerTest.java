@@ -2,6 +2,7 @@ package com.icrn.service;
 
 import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.model.Entity;
+import com.icrn.model.Mob;
 import com.icrn.model.MudUser;
 import com.icrn.model.Room;
 import io.netty.channel.Channel;
@@ -338,5 +339,36 @@ public class StateHandlerTest {
                 .assertValueCount(1)
                 .assertComplete();
 
+    }
+
+    @Test
+    public void verifyWeCanGetRoomMap(){
+        val joe = MudUser.makeJoe();
+        val joe2 = MudUser.makeJoe();
+        val glork = Mob.makeGlork();
+        val glork2 = Mob.makeGlork();
+        joe.setId(1L);
+        joe2.setId(2L);
+        glork.setId(3L);
+        glork2.setId(4L);
+
+        glork2.setRoomLocation(11L);
+        glork.setRoomLocation(11L);
+        joe.setRoomLocation(11L);
+        joe2.setRoomLocation(10L);
+
+        this.stateHandler.saveEntityState(joe,joe2,glork,glork2).blockingForEach(entity -> {});
+
+        HashMap<Long,Entity> map = new HashMap<>();
+        map.put(joe.getId(),joe);
+        map.put(glork.getId(),glork);
+        map.put(glork2.getId(),glork2);
+
+        this.stateHandler.getRoomEntityMap(11L)
+                .test()
+                .assertNoErrors()
+                .assertComplete()
+                .assertValueCount(1)
+                .assertValue(map);
     }
 }
