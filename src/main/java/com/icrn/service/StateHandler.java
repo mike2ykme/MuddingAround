@@ -250,14 +250,16 @@ public class StateHandler {
                     } catch (Exception e) {
                         log.error("ERROR trying to write message to duplicate connection");
                         log.error(e.getMessage());
-                        completableEmitter.onError(e);
+//                        completableEmitter.onError(e);
+                        throw e;
                     }
                     try {
                         possibleUserContext.channel().close().sync();
                     } catch (InterruptedException e) {
                         log.error("ERROR trying to close duplicate connection");
                         log.error(e.getMessage());
-                        completableEmitter.onError(e);
+//                        completableEmitter.onError(e);
+                        throw e;
                     }
                 }
 

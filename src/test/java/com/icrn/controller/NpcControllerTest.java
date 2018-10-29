@@ -13,6 +13,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -45,6 +46,8 @@ public class NpcControllerTest {
 
     @Test
     public void processTick(){
+        when(this.mockStateHandler.getAllRooms()).thenReturn(Observable.empty());
+
         this.controllerHasMock.processTick()
                 .test()
                 .assertComplete();
@@ -58,6 +61,19 @@ public class NpcControllerTest {
         when(mockStateHandler.getAllEntitiesByRoom(0L)).thenReturn(Observable.empty());
         when(mockRoom.getMobInfo()).thenReturn(mockMobInfo);
         when(mockMobInfo.getMobCount()).thenReturn(0L);
+
+        val mockTemplate = mock(StatsBasedEntityTemplate.class);
+
+//        when(mockMobInfo.getStatsBasedEntityTemplate()).thenReturn(mockTemplate);
+        when(mockMobInfo.getStatsBasedEntityTemplate()).thenReturn(mockTemplate);
+        when(mockTemplate.getCON()).thenReturn(10);
+        when(mockTemplate.getDEX()).thenReturn(10);
+        when(mockTemplate.getHP()).thenReturn(10);
+        when(mockTemplate.getMaxHP()).thenReturn(10);
+        when(mockTemplate.getSTR()).thenReturn(10);
+        when(mockTemplate.getRoom()).thenReturn(0L);
+
+
 
         when(mockRoom.getName()).thenReturn("I'M A FAKE!");
 
@@ -116,11 +132,59 @@ public class NpcControllerTest {
     public void verifyProcessingAllMonstersInARoom(){
         // Before we do anything we're just going to look at each room and find if there are
         // any active Mobs in it
+        val joe = MudUser.makeJoe();
+        val joe2 = MudUser.makeJoe();
+        val glork = Mob.makeGlork();
+        val glork2 = Mob.makeGlork();
+        joe.setId(1L);
+        joe2.setId(2L);
+        glork.setId(3L);
+        glork.setLastAttackedById(joe.getId());
+        glork2.setId(4L);
 
-        when(this.mockStateHandler.getAllRooms()).thenReturn(null);
+        glork2.setRoomLocation(11L);
+        glork.setRoomLocation(11L);
+        joe.setRoomLocation(11L);
+        joe2.setRoomLocation(10L);
+
+        HashMap<Long,Entity> map = new HashMap<>();
+        map.put(joe.getId(),joe);
+        map.put(glork.getId(),glork);
+        map.put(glork2.getId(),glork2);
+
+        HashMap<Long,Entity> map2 = new HashMap<>();
+        map2.put(joe2.getId(),joe2);
+
+        val mockRoom10 = mock(Room.class);
+        val mockRoom11 = mock(Room.class);
+        val mockRoom0 = mock(Room.class);
+
+        when(mockRoom10.getId()).thenReturn(10L);
+        when(mockRoom11.getId()).thenReturn(11L);
+
+        when(mockRoom10.getName()).thenReturn("ROOM 10");
+        when(mockRoom11.getName()).thenReturn("ROOM 11");
+
+        when(mockRoom10.isSafeZone()).thenReturn(false);
+        when(mockRoom11.isSafeZone()).thenReturn(false);
+        when(mockRoom0.isSafeZone()).thenReturn(true);
+
+
+        when(mockStateHandler.getRoomEntityMap(10L)).thenReturn(Single.just(map2));
+        when(mockStateHandler.getRoomEntityMap(11L)).thenReturn(Single.just(map));
+
+        List<String> list = new ArrayList<>();
+        list.add("attack");
+
+        when(this.mockAttackHandler.processAttack(any(),any())).thenReturn(Single.just(new AttackResult(glork,joe,list)));
+
+        when(this.mockStateHandler.getAllRooms()).thenReturn(Observable.just(mockRoom11,mockRoom10));
 
         when(this.mockStateHandler.getAllEntitiesByRoom(0L)).thenReturn(null);
 
+        when(this.mockStateHandler.saveEntityState(any(),any())).thenReturn(Observable.just(MudUser.makeJoe()));
+
+        when(this.mockStateHandler.sendUserMessage(anyLong(),any())).thenReturn(Completable.complete());
 
         this.controllerHasMock.processMonstersInAllRooms()
                 .test()

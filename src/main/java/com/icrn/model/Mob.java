@@ -29,11 +29,15 @@ public class Mob implements StatsBasedEntity {
     public static Mob fromTemplate(Long id, String name,Integer aggressionIndex, StatsBasedEntityTemplate template)
     {
         val mob = new Mob(id,name);
+
+        mob.setAggressionIndex(aggressionIndex);
         mob.setCON(template.getCON());
         mob.setDEX(template.getDEX());
-        mob.setHP(template.getHP());
+
         mob.setMaxHP(template.getMaxHP());
+        mob.setHP(template.getHP());
         mob.setSTR(template.getSTR());
+
         mob.setRoomLocation(template.getRoom());
         LocalDateTime time = LocalDateTime.of(2018,1,1,1,1);
         mob.setLastActionPerformedTime(time);
@@ -117,6 +121,8 @@ public class Mob implements StatsBasedEntity {
 
         if (this.HP >0)
             this.setEntityStatus(EntityStatus.ACTIVE);
+        else
+            this.setEntityStatus(EntityStatus.KO);
 
     }
 }

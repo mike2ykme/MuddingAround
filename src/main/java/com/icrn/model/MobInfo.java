@@ -8,7 +8,4 @@ public class MobInfo {
     public String getMobName;
     public StatsBasedEntityTemplate statsBasedEntityTemplate;
 
-    public StatsBasedEntityTemplate getTemplate() {
-        return statsBasedEntityTemplate;
-    }
 }

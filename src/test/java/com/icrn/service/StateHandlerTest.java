@@ -245,31 +245,11 @@ public class StateHandlerTest {
                 .blockingGet();
     }
 
-
-    //    @Test
-//    public void verifySendUserMessage(){
-//        val joe = MudUser.makeJoe();
-//        joe.setOnline(false);
-//        this.stateHandler.registerUserOnline(joe,this.mockCtx)
-//                .blockingGet();
-//
-//        val chFut = mock(ChannelFuture.class);
-//
-//        when(this.mockCtx.writeAndFlush(any())).thenReturn(chFut);
-//
-//        when(chFut.addListener(any())).thenReturn(null);
-//        when(chFut.isSuccess()).thenReturn(true);
-//
-//        this.stateHandler.sendUserMessage(joe,"TEST")
-//                .test()
-//                .assertComplete();
-//    }
     @Test
     public void registerUserOnlineWithExistingUser() throws Exception {
 
 
         val mockChannel = mock(Channel.class);
-
         when(this.mockCtx.channel()).thenReturn(mockChannel);
 
         val mockChFut = mock(ChannelFuture.class);
@@ -279,7 +259,6 @@ public class StateHandlerTest {
             when(mockChFut.sync()).thenReturn(null);
         } catch (InterruptedException e) {
             System.out.println("YEP got expected exception");
-//            e.printStackTrace();
         }
 
         when(this.mockCtx.writeAndFlush(any())).thenReturn(mockChFut);
@@ -298,7 +277,6 @@ public class StateHandlerTest {
         try {
             when(mockChFut.sync()).thenThrow(InterruptedException.class);
         } catch (InterruptedException e) {
-//            e.printStackTrace();
             System.out.println("YEP got expected exception");
         }
         this.stateHandler.registerUserOnline(MudUser.makeJoe(), mockCtx)
