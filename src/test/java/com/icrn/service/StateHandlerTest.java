@@ -1,5 +1,6 @@
 package com.icrn.service;
 
+import com.icrn.exceptions.CannotFindEntity;
 import com.icrn.exceptions.CannotPerformAction;
 import com.icrn.model.Entity;
 import com.icrn.model.Mob;
@@ -8,19 +9,14 @@ import com.icrn.model.Room;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import lombok.val;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,11 +26,11 @@ public class StateHandlerTest {
     private ChannelHandlerContext mockCtx;
 
     StateHandler stateHandler;
-    HashMap<Long, Entity> map;
+    ConcurrentHashMap<Long, Entity> map;
 
     @Before
     public void init() {
-        this.map = new HashMap<>();
+        this.map = new ConcurrentHashMap<>();
         this.stateHandler = new StateHandler(map);
         this.joe = MudUser.makeJoe();
 
@@ -348,5 +344,15 @@ public class StateHandlerTest {
                 .assertComplete()
                 .assertValueCount(1)
                 .assertValue(map);
+    }
+
+    @Test
+    public void testSendMessageWithoutCTX(){
+        val joe = MudUser.makeJoe();
+
+        this.stateHandler.sendUserMessage(joe,"test message")
+                .test()
+                .assertError(CannotFindEntity.class);
+
     }
 }

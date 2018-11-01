@@ -4,13 +4,13 @@ import com.icrn.model.*;
 import com.icrn.service.AttackHandler;
 import com.icrn.service.StateHandler;
 import io.reactivex.Completable;
+import io.reactivex.schedulers.Schedulers;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import lombok.var;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 @Slf4j
@@ -26,16 +26,22 @@ public class NpcController {
     }
 
     public Completable processTick(){
-//        return Completable.complete();
         return Completable.create(completableEmitter -> {
-            this.spawnMonsters();
+            log.info("Starting NPC Tick");
+
+            this.spawnMonsters()
+                    .subscribe(() -> {
+                        log.debug("Finished round of spawning mobs");
+                    },completableEmitter::onError);
             this.processMonstersInAllRooms()
                     .subscribe(() -> {
-                        log.info("Finished processing all mobs in all rooms tick");
+                        log.debug("Finished processing all mobs in all rooms tick");
                     },completableEmitter::onError);
 
            completableEmitter.onComplete();
-        });
+
+           log.info("Finished processing NPC Tick");
+        }).subscribeOn(Schedulers.single());
     }
 
     public Completable processMonstersInAllRooms(){
@@ -63,14 +69,14 @@ public class NpcController {
                                                         if (entitiesInRoom.containsKey(userId)) {
                                                             this.processMonsterAttack(mob,(StatsBasedEntity)entitiesInRoom.get(userId))
                                                                     .subscribe(() -> {
-                                                                        log.info("mob ID: " + mob.getId() + " retaliated against userID " + userId + " for previous attack");
+                                                                        log.debug("mob ID: " + mob.getId() + " retaliated against userID " + userId + " for previous attack");
                                                                     },completableEmitter::onError);
                                                         }
                                                     }else {
                                                         val random = new Random();
                                                         val rint = random.nextInt(99);
                                                         if (mob.getAggressionIndex() > rint){
-                                                            log.info("The aggression index is greater than random integer");
+                                                            log.debug("The aggression index is greater than random integer");
                                                             val user = entitiesInRoom.entrySet().stream()
                                                                     .filter(longEntityEntry -> longEntityEntry.getValue().getType() == EntityType.USER)
                                                                     .map(longEntityEntry -> (MudUser)longEntityEntry.getValue())
@@ -80,10 +86,10 @@ public class NpcController {
                                                                     .findFirst();
 
                                                             user.ifPresent(mudUser ->{
-                                                                log.info("User was present: " + mudUser.getId() + " == " + mudUser.getName());
+                                                                log.debug("User was present: " + mudUser.getId() + " == " + mudUser.getName());
                                                                 this.processMonsterAttack(mob,mudUser)
                                                                         .subscribe(() -> {
-                                                                            log.info("mob ID " + mob.getId() + " attacked: " + mudUser.getId());
+                                                                            log.debug("mob ID " + mob.getId() + " attacked: " + mudUser.getId());
                                                                         },completableEmitter::onError);
                                                             });
                                                         }
@@ -96,42 +102,52 @@ public class NpcController {
                     },throwable -> {
                         throw new RuntimeException(throwable);
                     });
-            log.info("Done processing all entities in all Rooms for attacks");
+            log.debug("Done processing all entities in all Rooms for attacks");
             completableEmitter.onComplete();
         });
     }
 
-
     public Completable spawnMonsters() {
         log.debug("Spawning Monsters");
         return Completable.create(completableEmitter -> {
+//            val count = this.stateHandler.getEntities().entrySet()
+//                    .stream()
+//                    .filter(longEntityEntry -> longEntityEntry.getValue().getType() == EntityType.ROOM)
+//                    .map(Map.Entry::getValue)
+//                    .map(entity -> (Room)entity)
+//                    .count();
+
+//            log.debug("COUNT: " + count);
             this.stateHandler.getAllRooms()
+                .filter(room -> room.getMobInfo() != null)
                 .subscribe(room -> {
                     val roomMobInfo = room.getMobInfo();
-
+                    log.debug("inside getAllRooms() room id: " + room.getId() + " -- " + room.getName());
                     this.stateHandler.getAllEntitiesByRoom(room.getId())
                             .filter(entity ->  entity.getType() == EntityType.MOB)
                             .filter(entity -> ((Mob)entity).getEntityStatus() == EntityStatus.ACTIVE)
                             .count()
                             .subscribe(mobCount -> {
                                 var currentCount = mobCount;
-                                log.info("ROOM: " + room.getName() + " EXPECTED MOB COUNT IS: " + mobCount + " CURRENT COUNT: " + currentCount);
+                                log.debug("mobCount: " + mobCount);
+                                log.debug("ROOM MOB INFO: " + roomMobInfo.toString());
+                                log.debug("ROOM: " + room.getName() + " EXPECTED MOB COUNT IS: " + roomMobInfo.getMobCount() + " CURRENT COUNT: " + currentCount);
 
                                 while (currentCount < roomMobInfo.getMobCount()){
-                                    log.info("Room: " + room.getName() + " needs mobs generated");
+                                    log.debug("Room: " + room.getName() + " needs mobs generated");
                                     val random = new Random();
 
-                                    Mob mob = Mob.fromTemplate(null,roomMobInfo.getMobName,random.nextInt(110),roomMobInfo.getStatsBasedEntityTemplate());
+                                    Mob mob = Mob.fromTemplate(null,roomMobInfo.getMobName(),random.nextInt(110),roomMobInfo.getStatsBasedEntityTemplate());
                                     this.stateHandler.createNewEntity(mob)
                                             .subscribe(entity -> {
-                                                log.info("ENTITY GENERATED: " + entity.getName());
+                                                log.debug("ENTITY GENERATED: " + entity.getName());
                                             },completableEmitter::onError);
 
                                     currentCount++;
                                 }
 
                             },completableEmitter::onError);
-                    log.info("Done spawning mobs for: " + room.getName());
+                    log.debug("Done spawning mobs for: " + room.getName());
                     completableEmitter.onComplete();
                 },completableEmitter::onError);
 
@@ -149,16 +165,16 @@ public class NpcController {
                 attacker.performedAction();
                 this.attackHandler.processAttack(attacker,defender)
                     .subscribe(attackResult -> {
-                        log.info("Mob id: " +attacker.getId() + " attacked: " + dId + " -- " + dName);
+                        log.debug("Mob id: " +attacker.getId() + " attacked: " + dId + " -- " + dName);
 
                         this.stateHandler.saveEntityState(attacker,defender)
                                 .subscribe(entity -> {
-                                    log.info("Entity " + entity.getName() + " -- " + entity.getId() + " was saved");
+                                    log.debug("Entity " + entity.getName() + " -- " + entity.getId() + " was saved");
                                 },completableEmitter::onError);
 
                         this.stateHandler.sendUserMessage(dId,attackResult.getMessageLogString())
                                 .subscribe(() -> {
-                                    log.info("User ID: " + dId + " -- " + dName + " was sent a message after the attack");
+                                    log.debug("User ID: " + dId + " -- " + dName + " was sent a message after the attack");
                                 },completableEmitter::onError);
 
                     },completableEmitter::onError);

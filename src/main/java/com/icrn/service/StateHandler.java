@@ -19,12 +19,10 @@ import lombok.var;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
-
 
 @Slf4j @Data
 public class StateHandler {
-    @NonNull Map<Long,Entity> entities;
+    @NonNull ConcurrentHashMap<Long,Entity> entities;
     private final HashMap<Long,ChannelHandlerContext> communicationMap = new HashMap<>();
     static final String RETURN_CHARS = "\r\n";
     EntityDao entityDao = null;
@@ -35,7 +33,7 @@ public class StateHandler {
 
     }
 
-    public StateHandler(Map<Long,Entity> entities){
+    public StateHandler(ConcurrentHashMap<Long,Entity> entities){
         this.entities = entities;
         log.info("Entities assigned from HashMap<>()");
 
@@ -120,7 +118,7 @@ public class StateHandler {
             this.entities.entrySet().stream()
                     .map(longEntityEntry -> longEntityEntry.getValue())
                     .filter(entity -> entity.getRoomLocation() == roomId)
-                    .peek(entity -> log.info("Found entity: " + entity.getName() + " in roomId: " + roomId))
+                    .peek(entity -> log.debug("Found entity: " + entity.getName() + " in roomId: " + roomId))
                     .forEach(observableEmitter::onNext);
 
             observableEmitter.onComplete();
@@ -134,6 +132,9 @@ public class StateHandler {
                     .map(Map.Entry::getValue)
                     .filter(entity -> entity.getType() == EntityType.ROOM )
                     .map(entity -> (Room)entity)
+                    .peek(room -> {
+                        log.debug("OUTPUT FROM getAllRooms(): " + room.toString());
+                    })
                     .forEach(observableEmitter::onNext);
 
             observableEmitter.onComplete();
@@ -194,7 +195,7 @@ public class StateHandler {
             }
 
             if (!entityByName.isPresent()){
-                log.info("Unable to find entity");
+                log.error("Unable to find entity: " + name);
                 maybeEmitter.onComplete();
             }
 
@@ -211,9 +212,9 @@ public class StateHandler {
                 chFut.addListener(new ChannelFutureListener() {
                     @Override
                     public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                        log.info("inside operationComplete()");
+                        log.debug("inside operationComplete()");
                         if (chFut.isSuccess()){
-                            log.info("Was able to send " + user.getName() + " a message: " + msg);
+                            log.debug("Was able to send " + user.getName() + " a message: " + msg);
                             completableEmitter.onComplete();
                         } else {
                             log.error("Unable to send " + user.getName() + " a message: " + msg);
@@ -266,7 +267,7 @@ public class StateHandler {
                 MudUser user = (MudUser)this.entities.get(mudUser.getId());
 
                 if ((null != user)){
-                    log.info("User was not null, trying to register ctx of user");
+                    log.debug("User was not null, trying to register ctx of user");
                    user.setOnline(true);
                    this.saveEntityState(user)
                            .subscribe(ignore ->{
@@ -295,7 +296,7 @@ public class StateHandler {
                 this.saveEntityState(user)
                         .subscribe(ignore ->{
                             if (possibleUserKey == null){
-                                log.info("I have tried to remove a user comm function when none existed. Should not disconnect logged out users again");
+                                log.error("I have tried to remove a user comm function when none existed. Should not disconnect logged out users again");
                                 completableEmitter.onError(NoUserToDisconnect.foundNone());
                             }else {
                                 completableEmitter.onComplete();
@@ -308,11 +309,11 @@ public class StateHandler {
     }
 
     public Single<Entity> getEntityById(long id) {
-        log.info("Trying to find an ENTITY with id: " + id);
-        log.info("Do we have this in the state?: " + this.entities.containsKey(id));
+        log.debug("Trying to find an ENTITY with id: " + id);
+        log.debug("Do we have this in the state?: " + this.entities.containsKey(id));
         return Single.create(singleEmitter -> {
            if (this.entities.containsKey(id)){
-               log.info("We've found this userID in the state");
+               log.debug("We've found this userID in the state");
                singleEmitter.onSuccess(this.entities.get(id));
            }else {
                singleEmitter.onError(CannotFindEntity.foundNone());

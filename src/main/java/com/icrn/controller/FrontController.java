@@ -11,6 +11,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.reactivex.Completable;
 import io.reactivex.Maybe;
 import io.reactivex.Single;
+import io.reactivex.schedulers.Schedulers;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -35,10 +36,10 @@ public class FrontController {
                     .map(entity -> (MudUser) entity)
                     .filter(mudUser -> mudUser.getPassword().equals(password))
                     .subscribe(mudUser ->{
-                            log.info("maybeGetUser() was able to find user: " + mudUser.getName() + " for username: " + username);
+                            log.debug("maybeGetUser() was able to find user: " + mudUser.getName() + " for username: " + username);
                             maybeEmitter.onSuccess(mudUser);
                         },maybeEmitter::onError,() -> {
-                            log.info("maybeGetUser() completed for user: " + username );
+                            log.debug("maybeGetUser() completed for user: " + username );
                             maybeEmitter.onComplete();
                     });
             maybeEmitter.onComplete();
@@ -76,22 +77,22 @@ public class FrontController {
     }
 
     public Single<ActionResult> handleUserMove(MudUser mudUser, Movement direction) {
-        log.info("inside handleUserMove()");
-        log.info("DIRECTION: " + direction.toString());
+        log.debug("inside handleUserMove()");
+        log.debug("DIRECTION: " + direction.toString());
         return Single.create(singleEmitter -> {
-            log.info("Trying to find room from user's room location: " + mudUser.getRoomLocation());
+            log.debug("Trying to find room from user's room location: " + mudUser.getRoomLocation());
             this.stateHandler.getEntityById(mudUser.getRoomLocation())
                     .map(entity -> (Room)entity)
                     .subscribe(room -> {
-                        log.info("Found room: " + room.getName());
+                        log.debug("Found room: " + room.getName());
                         if (room.allowsMovement(direction)){
-                            log.info("ROOM allows movement in this direction: " + direction);
+                            log.debug("ROOM allows movement in this direction: " + direction);
                             mudUser.setRoomLocation(room.getRoomIdFromDirection(direction));
                             mudUser.performedAction();
 
                             this.stateHandler.saveEntityState(mudUser)
                                     .subscribe(entity -> {
-                                        log.info("user moved successfully and state was updated");
+                                        log.debug("user moved successfully and state was updated");
                                         singleEmitter.onSuccess(ActionResult.success("User was able to move in that direction", mudUser));
                                     },throwable -> {
                                         log.error("Unable to save the entity: " + mudUser.getName());
@@ -99,7 +100,7 @@ public class FrontController {
                                     });
 
                         }else {
-                            log.info("ROOM does NOT allow movement in this direction: " + direction);
+                            log.debug("ROOM does NOT allow movement in this direction: " + direction);
                             singleEmitter.onSuccess(ActionResult.failure("User is unable to move in that direction", mudUser));
                         }
                     },throwable -> {
@@ -110,12 +111,12 @@ public class FrontController {
     }
 
     public Single<ActionResult> handleCommands(String command, long userId) {
-        log.info("Trying to handle command from userId: " + userId);
+        log.debug("Trying to handle command from userId: " + userId);
         return Single.<ActionResult>create(singleEmitter -> {
             this.stateHandler.getEntityById(userId)
                     .map(entity -> (MudUser) entity)
                     .subscribe( user-> {
-                        log.info("found user for command: " + user.getName());
+                        log.debug("found user for command: " + user.getName());
                         val parsedCommand = MudCommand.parse(command,user);
                         log.debug("successfully parsed command from user");
                         user.setLastCommand(parsedCommand.getType());
@@ -129,7 +130,7 @@ public class FrontController {
                         }else if (canUserPerformAction
                                 || parsedCommand.getType() == Actions.TALK
                                 || parsedCommand.getType() == Actions.WHISPER ){
-                            log.info("User can perform action");
+                            log.debug("User can perform action");
                             if (parsedCommand.getType() != Actions.TALK &&
                             parsedCommand.getType() != Actions.WHISPER){
 //                                user.setLastActionPerformedTime(LocalDateTime.now());
@@ -167,14 +168,14 @@ public class FrontController {
                                     this.handUserRest(user,parsedCommand)
                                             .subscribe(singleEmitter::onSuccess
                                                     ,throwable -> {
-                                                log.info("Error when trying to rest");
+                                                log.error("Error when trying to rest");
                                                 singleEmitter.onSuccess(
                                                         ActionResult.failure("You were unable to rest",user));
                                             });
                                     break;
                                 case MOVE:
                                     try {
-                                        log.info("TARGET DIRECTION: " + parsedCommand.getTarget().get());
+                                        log.debug("TARGET DIRECTION: " + parsedCommand.getTarget().get());
                                         this.handleUserMove(user,Movement.of(parsedCommand.getTarget().get()))
                                                 .subscribe(singleEmitter::onSuccess,throwable -> {
                                                     log.error("Error received from handleUserMove(): " +
@@ -214,13 +215,13 @@ public class FrontController {
                     },throwable -> {
                         singleEmitter.onError(throwable);
                     });
-        });
+        }).subscribeOn(Schedulers.single());
     }
 
     private Single<ActionResult> handUserRest(MudUser user, MudCommand parsedCommand) {
         log.debug("inside handleUserRest()");
         log.debug("target: " + parsedCommand.getTarget());
-        log.info("CMD: " + parsedCommand.getType() + " target: " + parsedCommand.getTarget().get());
+        log.debug("CMD: " + parsedCommand.getType() + " target: " + parsedCommand.getTarget().get());
         return Single.create(singleEmitter -> {
             this.restHandler.restStatsEntity(user)
                     .subscribe(statsBasedEntity -> {
@@ -240,7 +241,7 @@ public class FrontController {
         return Completable.create(completableEmitter -> {
            this.stateHandler.saveEntityState(user)
                 .subscribe(entity -> {
-                    log.info(entity.getName() + " state has been saved");
+                    log.debug(entity.getName() + " state has been saved");
                     completableEmitter.onComplete();
                 },completableEmitter::onError);
         });
@@ -274,7 +275,7 @@ public class FrontController {
 
                                 this.stateHandler.saveEntityState(attackResult.getAttacker(), attackResult.getDefender())
                                     .subscribe(savedEntity -> {
-                                        log.info("Successfully saved: " + savedEntity.getName());
+                                        log.debug("Successfully saved: " + savedEntity.getName());
                                         log.debug(strings);
                                         System.out.println(strings);
 
@@ -282,7 +283,7 @@ public class FrontController {
                                             if (savedEntity.getId() != attacker.getId()) {
                                                 this.stateHandler.sendUserMessage(savedEntity.getId(), strings)
                                                     .subscribe(() -> {
-                                                        log.info("User " + savedEntity.getName() + " was sent message");
+                                                        log.debug("User " + savedEntity.getName() + " was sent message");
                                                     }, throwable -> log.error(throwable.getMessage()));
                                             }
                                         }
@@ -306,7 +307,7 @@ public class FrontController {
         val username = user.getName();
 
         if (!message.isPresent()){
-            log.info(username + " did not send anything to say");
+            log.debug(username + " did not send anything to say");
             return Single.just(ActionResult.failure("Must have something to say",user));
 
         }else {
@@ -340,7 +341,7 @@ public class FrontController {
                             singleEmitter.onError(throwable);
 
                         },() -> {
-                            log.info("We didn't find a user, but it ran to completion");
+                            log.debug("We didn't find a user, but it ran to completion");
                             singleEmitter.onSuccess(ActionResult.failure("Unable to whisper, maybe your friend isn't online", user));
 
                         });
@@ -352,7 +353,7 @@ public class FrontController {
         log.debug("Inside handleUserTalk()");
         val username = user.getName();
         if (!message.isPresent()){
-            log.info(username + " did not send anything to say");
+            log.debug(username + " did not send anything to say");
             return Single.just(ActionResult.failure("Must have something to say",user));
         }
         else {
@@ -362,7 +363,7 @@ public class FrontController {
                         .filter(entity -> ((MudUser)entity).isOnline())
                         .map(entity -> entity.getId())
                         .subscribe(userId -> {
-                            log.info("FOUND userId: " + userId + " in room: " + user.getRoomLocation());
+                            log.debug("FOUND userId: " + userId + " in room: " + user.getRoomLocation());
                             val messageToSend = user.getName() + ": " +message.get();
                             this.stateHandler.sendUserMessage(userId, messageToSend)
                                     .subscribe(() ->{

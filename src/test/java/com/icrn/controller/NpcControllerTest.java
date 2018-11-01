@@ -85,11 +85,14 @@ public class NpcControllerTest {
 
         when(mockMobInfo.getMobCount()).thenReturn(1L);
         when(mockStateHandler.createNewEntity(any())).thenReturn(Single.just(MudUser.makeJoe()));
+//        when(mockStateHandler.createNewEntity(any())).thenThrow(new RuntimeException("TEST"));
 
         this.controllerHasMock.spawnMonsters()
                 .test()
                 .assertComplete()
                 .assertNoErrors();
+
+        verify(mockStateHandler).createNewEntity(any());
     }
 
     @Test

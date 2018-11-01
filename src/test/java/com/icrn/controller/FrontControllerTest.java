@@ -10,6 +10,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.*;
@@ -24,7 +26,7 @@ public class FrontControllerTest {
     @Before
     public void setup(){
         this.joe = MudUser.makeJoe();
-        HashMap<Long, Entity> map = new HashMap<>();
+        ConcurrentHashMap<Long, Entity> map = new ConcurrentHashMap<>();
         map.put(joe.getId(),joe);
 
         this.mockAttackHandler = mock(AttackHandler.class);
@@ -49,7 +51,7 @@ public class FrontControllerTest {
 
     @Test
     public void handleNoUsersAvailableForLogin(){
-        val statehandler = new StateHandler(new HashMap<>());
+        val statehandler = new StateHandler(new ConcurrentHashMap<>());
         val controller = new FrontController(statehandler, null, null);
         val mockCtx = mock(ChannelHandlerContext.class);
 
@@ -153,7 +155,7 @@ public class FrontControllerTest {
 
 
         val joe = MudUser.makeJoe();
-        HashMap<Long, Entity> map = new HashMap<>();
+        ConcurrentHashMap<Long, Entity> map = new ConcurrentHashMap<>();
         map.put(joe.getId(),joe);
         StateHandler stater = new StateHandler(map);
         FrontController controller = new FrontController(stater, null,null);
